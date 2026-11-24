@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="color-scheme" content="dark">
+  <title>Gym</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <!-- iPhone: als Home-Bildschirm-App im Vollbild, Inhalt unter der (schwarzen) Statusleiste -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Gym">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header id="topbar">
+    <div id="topleft"></div>
+    <h1 id="title">Training</h1>
+    <div id="topright"></div>
+  </header>
+
+  <main id="view"></main>
+
+  <div id="timer" class="glass" hidden></div>
+
+  <nav id="tabs" class="glass">
+    <button data-tab="train" aria-label="Training">
+      <svg viewBox="0 0 24 24"><path d="M3 10v4M6 7v10M18 7v10M21 10v4M6 12h12"/></svg>
+      <span>Training</span>
+    </button>
+    <button data-tab="plan" aria-label="Plan">
+      <svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>
+      <span>Plan</span>
+    </button>
+    <button data-tab="log" aria-label="Verlauf">
+      <svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6"/></svg>
+      <span>Verlauf</span>
+    </button>
+    <button data-tab="more" aria-label="Mehr">
+      <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>
+      <span>Mehr</span>
+    </button>
+  </nav>
+
+  <div id="backdrop" hidden></div>
+  <section id="sheet" class="glass" hidden></section>
+  <div id="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
