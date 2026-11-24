@@ -5,9 +5,13 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.13.3';
+const APP_VERSION = '0.14.0';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
+  '🔗 Plan als Link teilen (Mehr → Plan): Empfänger tippt den Link an und kann den Plan übernehmen',
+  '👉 Zwischen den Bereichen wischen: auf der Seite nach links/rechts wischen',
+  '↩️ Gelöscht? Kurz „Rückgängig“ tippen – Trainings, Gewichtseinträge, Übungen und Tage',
+  '💪 Verlauf: Muskel-Übersicht – welche Muskeln du diese Woche (oder in 4 Wochen) wie oft trainiert hast',
   'Fehler behoben: Tab-Leiste verschwand beim Seitenwechsel kurz und die Seite sprang manchmal zurück',
   'Seitenwechsel läuft jetzt synchron mit der Pille (gleiches Tempo, gleiche Federung)',
   '✨ Bereichswechsel mit sanfter Animation: die neue Seite gleitet von links bzw. rechts herein',
@@ -768,7 +772,7 @@ let chartName = null;
 const ddmm = t => new Date(t).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 function renderLog() {
   setTop('Verlauf');
-  let h = renderWeek() + renderBody();
+  let h = renderWeek() + renderHeat() + renderBody();
   if (!S.logs.length) return h + '<div class="empty"><b>Noch keine Trainings</b>Sobald du ein Training beendest, erscheint es hier.</div>';
   const names = exerciseNames();
   if (!chartName || !names.includes(chartName)) chartName = names[0];
@@ -788,6 +792,49 @@ function renderLog() {
       ${l.note ? `<div class="sub" style="font-style:italic">„${esc(l.note)}“</div>` : ''}</div>${ICON.chev}</button>`;
   }
   return h + '</div>';
+}
+
+/* Muskel-Übersicht: wie viele Sätze je Muskel (Hauptmuskel = 1, Hilfsmuskel = ½ Satz) */
+function musclesForEntry(e) {
+  const o = allExercises().find(x => x.id === e.exId) || allExercises().find(x => x.id === e.baseId) || allExercises().find(x => x.name === e.name);
+  if (o && hasMuscles(o)) return o.muscles;
+  const t = MUSCLES_BY_NAME[e.name];
+  return t ? { p: t[0], s: t[1] } : null;
+}
+function renderHeat() {
+  const range = V.heat || 'w';
+  const from = range === 'w' ? weekStart(Date.now()) : dayStart(Date.now()) - 27 * DAY;
+  const planMus = new Set(allExercises().flatMap(o => hasMuscles(o) ? [...o.muscles.p, ...o.muscles.s] : []));
+  if (!planMus.size) return '';
+  const cnt = {};
+  for (const l of S.logs) {
+    if (l.startedAt < from) continue;
+    for (const e of l.entries) {
+      const m = musclesForEntry(e); if (!m) continue;
+      const n = e.sets.filter(s => s.done).length;
+      for (const k of m.p) cnt[k] = (cnt[k] || 0) + n;
+      for (const k of m.s) cnt[k] = (cnt[k] || 0) + n / 2;
+    }
+  }
+  // Stufen pro Woche: 1–5 wenig, 6–11 mittel, ab 12 viel (bei 4 Wochen das Vierfache)
+  const f = range === 'w' ? 1 : 4;
+  const lvl = v => !v ? 0 : v < 6 * f ? 1 : v < 12 * f ? 2 : 3;
+  const levels = {}; for (const [k, v] of Object.entries(cnt)) levels[k] = lvl(v);
+  if (levels.calves) levels.left_soleus = levels.right_soleus = levels.calves;
+  const fig = side => `<svg viewBox="0 0 1000 2200" aria-hidden="true">${Object.entries(BODY[side]).map(([k, list]) =>
+    list.map(pts => `<polygon class="${k === 'head' || k === 'knees' ? 'mh' : levels[k] ? 'h' + levels[k] : 'mb'}" points="${pts}"/>`).join('')).join('')}</svg>`;
+  const fmt = v => fmtNum(Math.round(v * 2) / 2);
+  const top = Object.entries(cnt).filter(([k]) => MUSCLE_DE[k]).sort((x, y) => y[1] - x[1]).slice(0, 4);
+  const missing = [...planMus].filter(k => !cnt[k] && MUSCLE_DE[k]).map(k => MUSCLE_DE[k]);
+  return `<div class="card">
+    <div class="heat-head"><div><div class="sub">Muskeln</div><b>${range === 'w' ? 'Diese Woche' : 'Letzte 4 Wochen'}</b></div>
+      <div class="seg heat-seg"><button class="${range === 'w' ? 'on' : ''}" data-act="heatRange" data-r="w">Woche</button><button class="${range === 'm' ? 'on' : ''}" data-act="heatRange" data-r="m">4 Wochen</button></div></div>
+    <div class="heat">${fig('front')}${fig('back')}</div>
+    <div class="heat-legend"><span><i class="h1"></i>wenig</span><span><i class="h2"></i>mittel</span><span><i class="h3"></i>viel</span><span class="sub">Sätze pro Muskel</span></div>
+    ${top.length ? `<p class="sub" style="margin:10px 0 0">Am meisten: ${top.map(([k, v]) => `${MUSCLE_DE[k]} <b style="color:var(--text)">${fmt(v)}</b>`).join(' · ')}</p>`
+      : `<p class="sub" style="margin:10px 0 0">${range === 'w' ? 'Diese Woche' : 'In den letzten 4 Wochen'} noch kein Training.</p>`}
+    ${top.length && missing.length ? `<p class="sub" style="margin:4px 0 0">Noch nicht dran: ${missing.join(', ')}</p>` : ''}
+  </div>`;
 }
 
 /* Wochenübersicht: Trainings diese Woche, Serie, Kalender der letzten 6 Wochen */
@@ -1199,10 +1246,14 @@ function renderMore() {
       Deine Daten liegen nur auf diesem ${IS_IOS ? 'iPhone' : 'Handy'} – sichere sie regelmäßig.</p>
     <div class="section-title">Plan</div>
     <div class="list">
-      <button class="row" data-act="sharePlan" ${S.plan.days.length ? '' : 'disabled'}><div class="grow"><div class="title">Plan teilen</div>
-        <div class="sub">Nur der Plan ohne Verlauf – zum Sichern oder Weitergeben</div></div>${ICON.chev}</button>
-      <label class="row"><div class="grow"><div class="title">Plan laden</div>
-        <div class="sub">Plan-Datei wählen – ersetzt nur den Plan, Verlauf bleibt</div></div>${ICON.chev}
+      <button class="row" data-act="sharePlanLink" ${S.plan.days.length ? '' : 'disabled'}><div class="grow"><div class="title">Plan als Link teilen</div>
+        <div class="sub">Nur der Plan ohne Verlauf – Empfänger tippt den Link an und übernimmt ihn</div></div>${ICON.chev}</button>
+      <button class="row" data-act="pastePlanLink"><div class="grow"><div class="title">Plan-Link einfügen</div>
+        <div class="sub">Kopierten Plan-Link übernehmen – ersetzt nur den Plan, Verlauf bleibt</div></div>${ICON.chev}</button>
+      <button class="row" data-act="sharePlan" ${S.plan.days.length ? '' : 'disabled'}><div class="grow"><div class="title">Plan als Datei teilen</div>
+        <div class="sub">Zum Sichern oder Weitergeben</div></div>${ICON.chev}</button>
+      <label class="row"><div class="grow"><div class="title">Plan-Datei laden</div>
+        <div class="sub">Ersetzt nur den Plan, Verlauf bleibt</div></div>${ICON.chev}
         <input type="file" accept="application/json,.json,text/plain,.txt" data-field="importFile" hidden></label>
       <button class="row" data-act="wipe"><div class="grow"><div class="title" style="color:var(--red)">Alle Daten löschen</div></div></button>
     </div>
@@ -1222,6 +1273,86 @@ async function exportData(mode) {
   if (res === 'file') toast(IS_IOS ? 'Backup gespeichert (Dateien-App)' : 'Backup gespeichert (Downloads)');
   render();
 }
+/* Plan per Link: Der Plan wird ohne Verlauf kompakt gemacht, komprimiert (deflate) und als Text
+   hinter das # der App-Adresse gehängt. Der Teil nach # wird nie an einen Server geschickt –
+   die App liest ihn beim Öffnen selbst aus und fragt, ob der Plan übernommen werden soll. */
+const b64u = bytes => { let s = ''; bytes.forEach(b => s += String.fromCharCode(b)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const unb64u = str => Uint8Array.from(atob(str.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+async function pipeBytes(bytes, stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
+function slimEx(e) {
+  const o = { n: e.name, r: [e.repMin, e.repMax], w: e.weight };
+  if (e.sets) o.s = e.sets; if (e.rest) o.p = e.rest; if (e.note) o.t = e.note; if (e.dbId) o.d = e.dbId;
+  if (e.muscles && !e.dbId && !MUSCLES_BY_NAME[e.name]) o.m = e.muscles;
+  if ((e.alts || []).length) o.a = e.alts.map(slimEx);
+  return o;
+}
+function fatEx(o, isAlt) {
+  const e = { id: uid(), name: o.n || 'Übung', repMin: o.r[0], repMax: o.r[1], reps: o.r[0], weight: o.w || 0, note: o.t || '', dbId: o.d || null,
+    image: o.d ? { type: 'db', value: o.d + '/0.jpg' } : null };
+  if (!isAlt) { e.sets = o.s || 3; e.rest = o.p || 90; }
+  if (o.m) e.muscles = o.m;
+  if (o.a) e.alts = o.a.map(x => fatEx(x, true));
+  return e;
+}
+async function planToLink(plan) {
+  const json = JSON.stringify({ v: 1, d: plan.days.map(d => ({ n: d.name, w: d.weekdays || [], x: d.exercises.map(e => slimEx(e)) })) });
+  let code = '0.' + b64u(new TextEncoder().encode(json));
+  if (window.CompressionStream) {
+    try { code = '1.' + b64u(await pipeBytes(new TextEncoder().encode(json), new CompressionStream('deflate-raw'))); } catch { /* unkomprimiert */ }
+  }
+  return location.origin + location.pathname + '#plan=' + code;
+}
+async function linkToPlan(text) {
+  const m = String(text).match(/#?plan=([01])\.([A-Za-z0-9_-]+)/);
+  if (!m) throw new Error('Kein Plan-Link');
+  let bytes = unb64u(m[2]);
+  if (m[1] === '1') bytes = await pipeBytes(bytes, new DecompressionStream('deflate-raw'));
+  const o = JSON.parse(new TextDecoder().decode(bytes));
+  return { days: o.d.map(d => ({ id: uid(), name: d.n, weekdays: d.w || [], exercises: d.x.map(x => fatEx(x)) })) };
+}
+async function sharePlanLink() {
+  const url = await planToLink(S.plan);
+  const data = { title: 'Gym-Trainingsplan', text: 'Mein Trainingsplan – Link antippen und in der Gym-App übernehmen:', url };
+  if (navigator.share) {
+    try { await navigator.share(data); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(url); toast('Link kopiert'); } catch { toast('Teilen nicht möglich'); }
+}
+// Plan übernehmen (aus Link oder Datei) – ersetzt nur den Plan, Verlauf bleibt
+async function adoptPlan(plan) {
+  const n = plan.days.length;
+  const names = plan.days.map(d => d.name).join(', ');
+  if (!await ask('Plan übernehmen?', `${n} Trainingstag${n === 1 ? '' : 'e'}: ${names}. ${S.plan.days.length ? 'Dein aktueller Plan wird ersetzt. ' : ''}Dein Verlauf bleibt erhalten.`, 'Übernehmen', !!S.plan.days.length)) return;
+  const old = JSON.stringify(S.plan);
+  S.plan = plan; S.active = null; save(); V.tab = 'plan'; V.sub = null; render(); warmAll(); fillMuscles();
+  if (old !== '{"days":[]}') toast('Plan übernommen', { label: 'Rückgängig', fn: () => { S.plan = JSON.parse(old); save(); render(); toast('Alter Plan wiederhergestellt'); } });
+  else toast('Plan übernommen');
+}
+// Beim Öffnen über einen Plan-Link
+async function checkPlanLink() {
+  if (!location.hash.startsWith('#plan=')) return;
+  const href = location.href;
+  history.replaceState(history.state, '', location.pathname + location.search);
+  let plan;
+  try { plan = await linkToPlan(href); } catch { toast('Plan-Link ist beschädigt'); return; }
+  // iPhone: Links öffnen immer Safari, nicht die Home-Bildschirm-App (getrennter Speicher)
+  if (IS_IOS && !isStandalone()) {
+    if (await dialog({ title: 'Plan-Link erkannt', text: 'Auf dem iPhone muss der Plan in der Gym-App vom Home-Bildschirm landen: Link kopieren, die App öffnen und unter Mehr → Plan → „Plan-Link einfügen“ einfügen.', ok: 'Link kopieren', cancel: 'Schließen' })) {
+      try { await navigator.clipboard.writeText(href); toast('Link kopiert – jetzt die Gym-App öffnen'); } catch { toast('Kopieren nicht möglich'); }
+    }
+    return;
+  }
+  adoptPlan(plan);
+}
+window.addEventListener('hashchange', checkPlanLink);
+async function pastePlanLink() {
+  let pre = '';
+  try { const c = await navigator.clipboard.readText(); if (/plan=/.test(c)) pre = c; } catch { /* kein Zugriff */ }
+  const txt = await askText('Plan-Link einfügen', { value: pre, placeholder: 'Link hier einfügen', multiline: true, ok: 'Weiter' });
+  if (!txt) return;
+  try { adoptPlan(await linkToPlan(txt.trim())); } catch { toast('Das ist kein gültiger Plan-Link'); }
+}
+
 // Nur den Plan (ohne Verlauf) als Datei teilen
 async function exportPlan() {
   const data = { app: 'gym-tracker', kind: 'plan', version: APP_VERSION, exportedAt: new Date().toISOString(), plan: S.plan };
@@ -1252,12 +1383,7 @@ function backupBanner() {
 async function importData(file) {
   try {
     const data = JSON.parse(await file.text());
-    if (data.kind === 'plan' && data.plan && Array.isArray(data.plan.days)) {
-      const n = data.plan.days.length;
-      if (!await ask('Plan laden?', `Die Datei enthält ${n} Trainingstag${n === 1 ? '' : 'e'}. ${S.plan.days.length ? 'Dein aktueller Plan wird ersetzt. ' : ''}Dein Verlauf bleibt erhalten.`, 'Laden', !!S.plan.days.length)) return;
-      S.plan = data.plan; S.active = null; save(); V.tab = 'plan'; V.sub = null; render(); warmAll(); toast('Plan geladen');
-      return;
-    }
+    if (data.kind === 'plan' && data.plan && Array.isArray(data.plan.days)) { adoptPlan(data.plan); return; }
     if (!data.state || !data.state.plan) throw new Error('Keine Gym-Backup-Datei');
     if (!await ask('Backup laden?', 'Alle aktuellen Daten auf diesem Gerät werden durch das Backup ersetzt.', 'Laden', true)) return;
     for (const k of await idb.keys()) if (String(k).startsWith('img:')) await idb.del(k);
@@ -1385,9 +1511,35 @@ window.addEventListener('popstate', () => {
 function openSub(id) { V.sub = id; history.pushState({ sub: id }, ''); render(); scrollTo(0, 0); }
 
 let toastT = null;
-function toast(msg) {
-  const t = $('#toast'); t.textContent = msg; t.hidden = false;
-  clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2600);
+function toast(msg, action) {
+  const t = $('#toast');
+  if (undoPending) finishUndo(); // ein offenes Rückgängig verfällt, sobald etwas Neues kommt
+  t.innerHTML = `<span>${esc(msg)}</span>${action ? `<button id="toastBtn">${esc(action.label)}</button>` : ''}`;
+  t.classList.toggle('act', !!action); t.hidden = false;
+  if (action) $('#toastBtn').onclick = () => { clearTimeout(toastT); t.hidden = true; action.fn(); };
+  clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; if (action && action.expire) action.expire(); }, action ? 5000 : 2600);
+}
+// Löschen mit „Rückgängig“: vorher Zustand merken, 5 s lang wiederherstellbar.
+// cleanup läuft erst, wenn nicht rückgängig gemacht wurde (z. B. Bild endgültig löschen).
+let undoPending = null;
+function finishUndo() { const u = undoPending; undoPending = null; if (u && u.cleanup) u.cleanup(); }
+function withUndo(msg, change, cleanup) {
+  if (undoPending) finishUndo();
+  const snap = JSON.stringify(S);
+  change();
+  const u = { cleanup };
+  toast(msg, {
+    label: 'Rückgängig',
+    fn: () => {
+      if (undoPending !== u) return;
+      undoPending = null;
+      const keep = { active: S.active }; // laufendes Training nicht zurückdrehen
+      S = JSON.parse(snap); if (keep.active) S.active = keep.active;
+      save(); if (sheetOpen) closeSheet(); render(); toast('Wiederhergestellt');
+    },
+    expire: () => { if (undoPending === u) finishUndo(); },
+  });
+  undoPending = u;
 }
 
 /* ---------- Bilder vorab für offline laden ---------- */
@@ -1463,18 +1615,21 @@ const actions = {
   async deleteDay() {
     const d = findDay(V.sub);
     if (!d || !await ask(`„${d.name}“ löschen?`, 'Der Tag wird mit allen Übungen gelöscht. Der Verlauf bleibt erhalten.', 'Löschen', true)) return;
-    S.plan.days = S.plan.days.filter(x => x.id !== d.id); save(); history.back();
+    withUndo(`„${d.name || 'Tag'}“ gelöscht`, () => { S.plan.days = S.plan.days.filter(x => x.id !== d.id); save(); });
+    history.back();
   },
   newEx() { editExSheet(V.sub, null); },
   editEx(el) { editExSheet(V.sub, el.dataset.id); },
   moveEx(el) { move(findDay(V.sub).exercises, el.dataset.id, +el.dataset.d); save(); render(); },
   saveEx() { saveEx(); },
-  async deleteEx() {
-    if (!await ask('Übung löschen?', `„${D.ex.name || 'Übung'}“ wird aus dem Plan entfernt. Der Verlauf bleibt erhalten.`, 'Löschen', true)) return;
+  deleteEx() {
     const day = findDay(D.dayId);
     const e = day.exercises.find(x => x.id === D.ex.id);
-    if (e && e.image && e.image.type === 'local') { idb.del('img:' + e.image.value); delete localImgs[e.image.value]; }
-    day.exercises = day.exercises.filter(x => x.id !== D.ex.id); save(); closeSheet(); render();
+    const img = e && e.image && e.image.type === 'local' ? e.image.value : null;
+    withUndo(`„${D.ex.name || 'Übung'}“ gelöscht`, () => {
+      day.exercises = day.exercises.filter(x => x.id !== D.ex.id); save();
+    }, img ? () => { idb.del('img:' + img); delete localImgs[img]; } : null);
+    closeSheet(); render();
   },
   imgDb() { openDbSearch(); },
   imgWeb() {
@@ -1633,20 +1788,22 @@ const actions = {
     addBodyEntry(t, kg, time);
     save(); closeSheet(); render(); toast('Eintrag gespeichert');
   },
-  async bwDel(el) {
+  bwDel(el) {
     const t = +el.dataset.t;
-    if (!await ask('Eintrag löschen?', `Der Eintrag vom ${fmtDate(t)} wird gelöscht.`, 'Löschen', true)) return;
-    S.body = (S.body || []).filter(p => p.t !== t);
-    save(); closeSheet(); render();
+    withUndo('Gewichtseintrag gelöscht', () => { S.body = (S.body || []).filter(p => p.t !== t); save(); });
+    closeSheet(); render();
   },
-  async deleteLog(el) {
-    if (!await ask('Training löschen?', 'Dieses Training wird aus dem Verlauf gelöscht.', 'Löschen', true)) return;
-    S.logs = S.logs.filter(l => l.id !== el.dataset.id); save(); closeSheet(); render();
+  deleteLog(el) {
+    withUndo('Training gelöscht', () => { S.logs = S.logs.filter(l => l.id !== el.dataset.id); save(); });
+    closeSheet(); render();
   },
   async install() { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice; installEvt = null; render(); },
   driveBackup() { exportData('share'); },
   fileBackup() { exportData('file'); },
   sharePlan() { exportPlan(); },
+  sharePlanLink() { sharePlanLink(); },
+  pastePlanLink() { pastePlanLink(); },
+  heatRange(el) { V.heat = el.dataset.r; render(); },
   toggleWd(el) {
     const d = findDay(V.sub), i = +el.dataset.wd;
     if (!d) return;
@@ -1757,6 +1914,40 @@ function tabDragEnd(e, cancel) {
 tabsEl.addEventListener('pointerup', e => tabDragEnd(e, false));
 tabsEl.addEventListener('pointercancel', e => tabDragEnd(e, true));
 
+// Auf der Seite nach links/rechts wischen -> Nachbarbereich (Seite folgt leicht dem Finger)
+let sw = null;
+document.addEventListener('touchstart', e => {
+  sw = null;
+  if (e.touches.length !== 1 || sheetOpen || $('#dlg')) return;
+  const t = e.touches[0];
+  if (t.clientX < 24 || t.clientX > innerWidth - 24) return; // Rand frei lassen für die Zurück-Geste des Handys
+  if (!e.target.closest('#view') || e.target.closest('input, textarea, select, .bwsvg, .chart svg, .no-swipe')) return;
+  sw = { x0: t.clientX, y0: t.clientY, t0: Date.now(), dir: null, dx: 0 };
+}, { passive: true });
+document.addEventListener('touchmove', e => {
+  if (!sw) return;
+  const t = e.touches[0], dx = t.clientX - sw.x0, dy = t.clientY - sw.y0;
+  if (!sw.dir && (Math.abs(dx) > 12 || Math.abs(dy) > 12)) sw.dir = Math.abs(dx) > Math.abs(dy) * 1.4 ? 'h' : 'v';
+  if (sw.dir !== 'h') return;
+  sw.dx = dx;
+  const i = TAB_ORDER.indexOf(V.tab), next = TAB_ORDER[i + (dx < 0 ? 1 : -1)];
+  const v = $('#view');
+  v.getAnimations().forEach(x => x.cancel());
+  v.style.transform = `translateX(${dx * (next ? 0.3 : 0.08)}px)`;
+  v.style.opacity = next ? Math.max(0.4, 1 - Math.abs(dx) / 600) : 1;
+}, { passive: true });
+document.addEventListener('touchend', () => {
+  const s = sw; sw = null;
+  if (!s || s.dir !== 'h') return;
+  const v = $('#view'), cur = v.style.transform;
+  v.style.transform = ''; v.style.opacity = '';
+  const i = TAB_ORDER.indexOf(V.tab), next = TAB_ORDER[i + (s.dx < 0 ? 1 : -1)];
+  const fast = Math.abs(s.dx) / (Date.now() - s.t0) > 0.4;
+  if (next && (Math.abs(s.dx) > 80 || (fast && Math.abs(s.dx) > 35))) { tabHandledAt = Date.now(); selectTab(next); return; }
+  if (cur && Element.prototype.animate) v.animate([{ transform: cur }, { transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.3, 1.35, .5, 1)' });
+});
+document.addEventListener('touchcancel', () => { if (sw) { sw = null; const v = $('#view'); v.style.transform = ''; v.style.opacity = ''; } });
+
 document.addEventListener('click', e => {
   const tab = e.target.closest('#tabs button') || (e.target === tabsEl ? tabsEl : null);
   if (tab) {
@@ -1810,6 +2001,7 @@ document.addEventListener('focusin', e => { if (e.target.matches('.set-row input
       <button class="btn primary block" data-act="closeSheet">Alles klar</button>`);
   }
   S.settings.seenVersion = APP_VERSION;
+  checkPlanLink();
   // Ab wann die App genutzt wird (davor gilt nichts als „verpasst“)
   if (!S.settings.since) S.settings.since = Math.min(Date.now(), ...S.logs.map(l => l.startedAt));
   save();

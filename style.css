@@ -252,7 +252,23 @@ button.cal-d.plan { color: var(--text); }
 #toast {
   position: fixed; left: 50%; transform: translateX(-50%); top: calc(var(--safe-t) + 16px); z-index: 60;
   background: var(--card-solid); border: 1px solid var(--line); padding: 10px 16px; border-radius: 99px; font-size: 14px;
+  display: flex; align-items: center; gap: 14px; white-space: nowrap; max-width: calc(100vw - 32px);
 }
+#toast span { overflow: hidden; text-overflow: ellipsis; }
+#toast.act { padding: 6px 6px 6px 16px; }
+#toast button { background: rgba(10,132,255,0.18); color: var(--accent); font-weight: 600; padding: 6px 12px; border-radius: 99px; font-size: 14px; }
+
+/* Muskel-Übersicht */
+.heat-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin-bottom: 10px; }
+.heat-seg { width: 170px; margin-top: 0; }
+.heat { display: flex; justify-content: center; gap: 8px; height: 230px; }
+.heat svg { height: 100%; width: auto; }
+.h1 { fill: #ff453a; fill-opacity: .32; }
+.h2 { fill: #ff453a; fill-opacity: .65; }
+.h3 { fill: #ff453a; }
+.heat-legend { display: flex; justify-content: center; gap: 14px; margin-top: 10px; font-size: 12px; color: var(--sub); align-items: center; }
+.heat-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; background: #ff453a; }
+.heat-legend i.h1 { opacity: .32; } .heat-legend i.h2 { opacity: .65; }
 
 /* Eigene Dialoge */
 #dlg { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: rgba(0,0,0,0); transition: background .2s; }
