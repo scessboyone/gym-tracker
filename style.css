@@ -19,6 +19,9 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 [hidden] { display: none !important; }
 html, body { margin: 0; background: var(--bg); color: var(--text); }
+/* Seiten-Animation schiebt den Inhalt seitlich: nie waagerecht scrollen lassen (sonst springt am Handy die Tab-Leiste weg) */
+body { overflow-x: hidden; }
+@supports (overflow-x: clip) { html, body { overflow-x: clip; } }
 body { min-height: 100dvh; font-size: 16px; line-height: 1.35; overscroll-behavior-y: none; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 input, textarea, select { font: inherit; color: var(--text); }

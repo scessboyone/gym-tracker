@@ -5,9 +5,10 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.13.2';
+const APP_VERSION = '0.13.3';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
+  'Fehler behoben: Tab-Leiste verschwand beim Seitenwechsel kurz und die Seite sprang manchmal zurück',
   'Seitenwechsel läuft jetzt synchron mit der Pille (gleiches Tempo, gleiche Federung)',
   '✨ Bereichswechsel mit sanfter Animation: die neue Seite gleitet von links bzw. rechts herein',
   'Tab-Leiste: Pille kurz über einem Bereich halten wechselt schon, ohne loszulassen',
