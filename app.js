@@ -5,9 +5,10 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.13.1';
+const APP_VERSION = '0.13.2';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
+  'Seitenwechsel läuft jetzt synchron mit der Pille (gleiches Tempo, gleiche Federung)',
   '✨ Bereichswechsel mit sanfter Animation: die neue Seite gleitet von links bzw. rechts herein',
   'Tab-Leiste: Pille kurz über einem Bereich halten wechselt schon, ohne loszulassen',
   '👆 Tab-Leiste: Finger auf der Leiste lassen und die Auswahl-Pille zum gewünschten Bereich schieben – loslassen wechselt',
@@ -1677,11 +1678,12 @@ function selectTab(t) {
 // Neue Seite gleitet aus der Richtung des Tabs herein (rechts liegender Tab -> von rechts)
 function slideIn(dir) {
   if (reduceMotion.matches || !Element.prototype.animate) return;
-  const ease = 'cubic-bezier(.22, .9, .25, 1)';
+  // Gleiches Tempo und gleiche Federung wie die Pille (style.css: #tabs .pill)
+  const ease = 'cubic-bezier(.3, 1.35, .5, 1)';
   for (const el of [$('#view'), $('#title')]) {
     el.getAnimations().forEach(x => x.cancel());
-    const an = el.animate([{ transform: `translateX(${dir * 56}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }],
-      { duration: el.id === 'title' ? 260 : 340, easing: ease });
+    const an = el.animate([{ transform: `translateX(${dir * 56}px)`, opacity: 0 }, { opacity: 1, offset: 0.5 }, { transform: 'none', opacity: 1 }],
+      { duration: 420, easing: ease });
     setTimeout(() => an.cancel(), 800); // Sicherheitsnetz: Seite nie unsichtbar hängen lassen
   }
 }
