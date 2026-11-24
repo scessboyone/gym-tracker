@@ -5,9 +5,10 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.16.1';
+const APP_VERSION = '0.16.2';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
+  'Gewicht eintragen: Die Uhrzeit wird nicht mehr abgeschnitten, „Eintragen“ steht jetzt breit darunter',
   'Die Einstellung „Bildschirm anlassen“ ist weg: Während des Trainings bleibt der Bildschirm einfach an',
   'Neues Design: Hell und Dunkel (Mehr → Darstellung), sportlicher Apple-Stil mit blauem Akzent und Wochenring auf Home',
   'Neuer Bereich „Home“ ganz links: Begrüßung, was heute ansteht, Woche, Gewicht und letztes Training auf einen Blick',
@@ -1108,7 +1109,7 @@ function renderBody() {
     </button>
     ${pts.length > 1 ? `<div data-act="openWeight">${bwChart(pts, { h: 120, goal: S.settings.goalKg, mini: true })}</div>` : '<p class="sub" style="margin:6px 0 0">Trag regelmäßig dein Gewicht ein – ab zwei Einträgen siehst du hier die Kurve.</p>'}
     <div class="bw-quick">
-      <div class="unit-wrap" style="flex:1;min-width:0"><input class="input" id="bw" inputmode="decimal" placeholder="Gewicht"><span>kg</span></div>
+      <div class="unit-wrap"><input class="input" id="bw" inputmode="decimal" placeholder="Gewicht"><span>kg</span></div>
       <input class="input bw-qtime" type="time" id="bw-qtime" value="${hhmm()}" data-auto="1" aria-label="Uhrzeit">
       <button class="btn primary" data-act="addBw">Eintragen</button>
     </div>

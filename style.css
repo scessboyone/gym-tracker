@@ -461,13 +461,13 @@ input[type="time"].input::-webkit-calendar-picker-indicator { opacity: .6; }
 /* Gekürzte Listen: Zeile zum Auf-/Zuklappen */
 .row.more-row { justify-content: center; color: var(--accent); font-size: 15px; font-weight: 600; }
 /* Gewicht schnell eintragen: Gewicht, Uhrzeit, Knopf */
-.bw-quick { display: flex; gap: 8px; margin-top: 12px; }
-.bw-quick .bw-qtime { width: 76px; flex: none; text-align: center; padding-left: 4px; padding-right: 4px; }
+.bw-quick { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.bw-quick .bw-qtime { width: 100px; flex: none; text-align: center; padding-left: 8px; padding-right: 8px; font-variant-numeric: tabular-nums; -webkit-appearance: none; appearance: none; }
 .bw-quick .bw-qtime::-webkit-calendar-picker-indicator { display: none; }
-.bw-quick .unit-wrap { flex: 1; min-width: 0; }
+.bw-quick .unit-wrap { flex: 1 1 130px; min-width: 130px; }
 .bw-quick .unit-wrap .input { padding-right: 36px; }
 .bw-quick .unit-wrap span { right: 12px; }
-.bw-quick .btn { flex: none; padding-left: 16px; padding-right: 16px; }
+.bw-quick .btn { flex: 1 1 auto; padding-left: 16px; padding-right: 16px; }
 
 /* ---------- Home ---------- */
 .hello { margin: 8px 4px 16px; }
