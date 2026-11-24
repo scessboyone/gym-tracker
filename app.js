@@ -5,9 +5,10 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.12.0';
+const APP_VERSION = '0.12.1';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
+  'Tab-Leiste: Pille kurz über einem Bereich halten wechselt schon, ohne loszulassen',
   '👆 Tab-Leiste: Finger auf der Leiste lassen und die Auswahl-Pille zum gewünschten Bereich schieben – loslassen wechselt',
   '📤 Plan teilen (Mehr → Plan): nur den Plan ohne Verlauf als Datei weitergeben – beim Laden wird nur der Plan ersetzt, der Verlauf bleibt',
   'Der eingebaute Beispielplan wurde entfernt – die App startet leer',
@@ -1705,6 +1706,11 @@ function tabDragMove(clientX) {
     if (tabDrag.hover) tabDrag.hover.classList.remove('hover');
     b.classList.add('hover'); tabDrag.hover = b;
     if (navigator.vibrate) navigator.vibrate(5);
+    // Kurz über einem Bereich verweilen -> schon wechseln (Finger bleibt auf der Leiste)
+    clearTimeout(tabDrag.dwell);
+    if (b.dataset.tab !== V.tab) tabDrag.dwell = setTimeout(() => {
+      if (tabDrag && tabDrag.hover === b) { selectTab(b.dataset.tab); if (navigator.vibrate) navigator.vibrate(10); }
+    }, 350);
   }
 }
 tabsEl.addEventListener('pointerdown', e => {
@@ -1722,12 +1728,12 @@ tabsEl.addEventListener('pointermove', e => {
 function tabDragEnd(e, cancel) {
   if (!tabDrag || e.pointerId !== tabDrag.id) return;
   const d = tabDrag; tabDrag = null;
-  clearTimeout(d.timer);
+  clearTimeout(d.timer); clearTimeout(d.dwell);
   tabsEl.classList.remove('drag');
   if (d.hover) d.hover.classList.remove('hover');
   tabHandledAt = Date.now();
   const b = cancel ? null : (d.active ? d.hover : tabAt(e.clientX));
-  if (b) selectTab(b.dataset.tab); else placePill();
+  if (b && !(d.active && b.dataset.tab === V.tab)) selectTab(b.dataset.tab); else placePill();
 }
 tabsEl.addEventListener('pointerup', e => tabDragEnd(e, false));
 tabsEl.addEventListener('pointercancel', e => tabDragEnd(e, true));
