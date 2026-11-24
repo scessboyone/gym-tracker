@@ -5,7 +5,7 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.13.0';
+const APP_VERSION = '0.13.1';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
   '✨ Bereichswechsel mit sanfter Animation: die neue Seite gleitet von links bzw. rechts herein',
@@ -1680,8 +1680,9 @@ function slideIn(dir) {
   const ease = 'cubic-bezier(.22, .9, .25, 1)';
   for (const el of [$('#view'), $('#title')]) {
     el.getAnimations().forEach(x => x.cancel());
-    el.animate([{ transform: `translateX(${dir * 56}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }],
+    const an = el.animate([{ transform: `translateX(${dir * 56}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }],
       { duration: el.id === 'title' ? 260 : 340, easing: ease });
+    setTimeout(() => an.cancel(), 800); // Sicherheitsnetz: Seite nie unsichtbar hängen lassen
   }
 }
 const tabsEl = $('#tabs');
