@@ -5,9 +5,10 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.16.0';
+const APP_VERSION = '0.16.1';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
+  'Die Einstellung „Bildschirm anlassen“ ist weg: Während des Trainings bleibt der Bildschirm einfach an',
   'Neues Design: Hell und Dunkel (Mehr → Darstellung), sportlicher Apple-Stil mit blauem Akzent und Wochenring auf Home',
   'Neuer Bereich „Home“ ganz links: Begrüßung, was heute ansteht, Woche, Gewicht und letztes Training auf einen Blick',
   'Rekorde und „Letzte Trainings“ zeigen nur noch die neuesten 3 – „Alle anzeigen“ klappt den Rest auf',
@@ -1379,8 +1380,6 @@ function renderMore() {
     <div class="list">
       <label class="toggle"><span>Standard-Pause für neue Übungen (Sekunden)</span>
         <input class="input" style="width:90px;text-align:center" inputmode="numeric" data-field="defRest" value="${S.settings.rest}"></label>
-      <label class="toggle"><span>Bildschirm während des Trainings anlassen</span>
-        <input type="checkbox" data-field="wakeLock" ${S.settings.wakeLock ? 'checked' : ''}></label>
     </div>
     <div class="section-title">Backup</div>
     <div class="list">
@@ -1579,7 +1578,7 @@ function stopRest() { clearInterval(T.iv); T.iv = null; const el = $('#timer'); 
 /* ---------- Bildschirm anlassen ---------- */
 let wakeLock = null;
 async function wake() {
-  if (!S.active || !S.settings.wakeLock || !('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+  if (!S.active || !('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
   try { wakeLock = await navigator.wakeLock.request('screen'); } catch { /* egal */ }
 }
 function unwake() { if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; } }
@@ -2141,7 +2140,6 @@ document.addEventListener('input', e => {
 document.addEventListener('change', e => {
   const f = e.target.dataset && e.target.dataset.field;
   if (f === 'chartName') { chartName = e.target.value; render(); }
-  else if (f === 'wakeLock') { S.settings.wakeLock = e.target.checked; save(); if (e.target.checked) wake(); else unwake(); }
   else if (f === 'importFile' && e.target.files[0]) { importData(e.target.files[0]); e.target.value = ''; }
 });
 document.addEventListener('focusin', e => { if (e.target.matches('.set-row input')) setTimeout(() => e.target.select(), 0); });
