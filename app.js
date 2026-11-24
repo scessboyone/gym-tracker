@@ -5,9 +5,10 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.12.1';
+const APP_VERSION = '0.13.0';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
+  '✨ Bereichswechsel mit sanfter Animation: die neue Seite gleitet von links bzw. rechts herein',
   'Tab-Leiste: Pille kurz über einem Bereich halten wechselt schon, ohne loszulassen',
   '👆 Tab-Leiste: Finger auf der Leiste lassen und die Auswahl-Pille zum gewünschten Bereich schieben – loslassen wechselt',
   '📤 Plan teilen (Mehr → Plan): nur den Plan ohne Verlauf als Datei weitergeben – beim Laden wird nur der Plan ersetzt, der Verlauf bleibt',
@@ -1664,10 +1665,24 @@ function move(arr, id, d) {
 }
 
 /* ---------- Tab-Leiste mit verschiebbarer Auswahl-Pille ---------- */
+const TAB_ORDER = ['train', 'plan', 'log', 'more'];
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 function selectTab(t) {
   if (sheetOpen) closeSheet();
   if (V.sub) { V.sub = null; history.back(); }
+  const dir = Math.sign(TAB_ORDER.indexOf(t) - TAB_ORDER.indexOf(V.tab)); // 1 = nach rechts
   V.tab = t; render(); scrollTo(0, 0);
+  if (dir) slideIn(dir);
+}
+// Neue Seite gleitet aus der Richtung des Tabs herein (rechts liegender Tab -> von rechts)
+function slideIn(dir) {
+  if (reduceMotion.matches || !Element.prototype.animate) return;
+  const ease = 'cubic-bezier(.22, .9, .25, 1)';
+  for (const el of [$('#view'), $('#title')]) {
+    el.getAnimations().forEach(x => x.cancel());
+    el.animate([{ transform: `translateX(${dir * 56}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }],
+      { duration: el.id === 'title' ? 260 : 340, easing: ease });
+  }
 }
 const tabsEl = $('#tabs');
 const pill = document.createElement('div');
