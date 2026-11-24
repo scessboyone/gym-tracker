@@ -5,9 +5,12 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.14.0';
+const APP_VERSION = '0.15.0';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
+  '🏠 Neuer Bereich „Home“ ganz links: Begrüßung, was heute ansteht, Woche, Gewicht und letztes Training auf einen Blick',
+  '🏆 Rekorde und „Letzte Trainings“ zeigen nur noch die neuesten 3 – „Alle anzeigen“ klappt den Rest auf',
+  '🕒 Gewicht: Die aktuelle Uhrzeit wird automatisch eingetragen und lässt sich ändern',
   '🔗 Plan als Link teilen (Mehr → Plan): Empfänger tippt den Link an und kann den Plan übernehmen',
   '👉 Zwischen den Bereichen wischen: auf der Seite nach links/rechts wischen',
   '↩️ Gelöscht? Kurz „Rückgängig“ tippen – Trainings, Gewichtseinträge, Übungen und Tage',
@@ -106,7 +109,7 @@ const todayWd = () => (new Date().getDay() + 6) % 7; // 0 = Montag
 
 /* ---------- Zustand ---------- */
 let S = { v: 1, plan: { days: [] }, logs: [], body: [], active: null, settings: { rest: 90, wakeLock: true } };
-const V = { tab: 'train', sub: null }; // sub = geöffneter Trainingstag im Plan-Editor
+const V = { tab: 'home', sub: null }; // sub = geöffneter Trainingstag im Plan-Editor
 const localImgs = {}; // id -> dataURL
 let saveTimer = null;
 function save() { clearTimeout(saveTimer); saveTimer = setTimeout(flush, 250); }
@@ -291,7 +294,8 @@ function render() {
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === V.tab));
   placePill();
   const view = $('#view');
-  if (V.tab === 'train') view.innerHTML = S.active ? renderWorkout() : renderDays();
+  if (V.tab === 'home') view.innerHTML = renderHome();
+  else if (V.tab === 'train') view.innerHTML = S.active ? renderWorkout() : renderDays();
   else if (V.tab === 'plan') view.innerHTML = V.sub && findDay(V.sub) ? renderDayEditor(findDay(V.sub)) : renderPlan();
   else if (V.tab === 'log') view.innerHTML = V.sub === 'weight' ? renderWeight() : renderLog();
   else view.innerHTML = renderMore();
@@ -334,6 +338,115 @@ function renderDays() {
   }
   return h;
 }
+/* ----- Home: Begrüßung und das Wichtigste auf einen Blick ----- */
+const minTxt = ms => { const m = Math.max(1, Math.round(ms / 60000)); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} min` : `${m} min`; };
+// Übungen eines Tages, bei denen letztes Mal alle Sätze das obere Wdh.-Ziel erreicht haben
+function levelUps(d) {
+  return d.exercises.filter(e => {
+    const s = lastSetsOf(e.id, e.name);
+    return e.repMax && s && s.length >= e.sets && s.every(x => x.reps >= e.repMax);
+  }).map(e => e.name);
+}
+function dayCard(d, label, primary) {
+  const last = lastLogOfDay(d.id);
+  const sets = d.exercises.reduce((n, e) => n + (e.sets || 0), 0);
+  const dur = last ? last.endedAt - last.startedAt : sets * 150000;
+  const ups = levelUps(d);
+  return `<article class="card day">
+    <div class="day-head"><div><div class="day-name">${esc(d.name)}</div>
+      <div class="sub">${d.exercises.length} Übungen · ${sets} Sätze · ca. ${minTxt(dur)}</div></div>
+      <span class="badge">${esc(label)}</span></div>
+    <div class="day-ex">${d.exercises.map(e => esc(e.name)).join(' · ') || 'Keine Übungen'}</div>
+    ${ups.length ? `<p class="sub home-up">🎯 Bereit zum Steigern: ${ups.map(esc).join(', ')}</p>` : ''}
+    <button class="btn ${primary ? 'primary' : ''}" data-act="start" data-id="${d.id}">Training starten</button>
+  </article>`;
+}
+function renderHome() {
+  setTop('');
+  const name = (S.settings.name || '').trim();
+  const hr = new Date().getHours();
+  const days = S.plan.days;
+  const pick = days.length ? scheduledPick() : null;
+  const todayD = pick && pick.label === 'Heute' ? findDay(pick.id) : null;
+  let line;
+  if (S.active) line = 'Dein Training läuft gerade – weiter geht’s!';
+  else if (!days.length) line = 'Schön, dass du da bist. Leg los mit deinem Trainingsplan.';
+  else if (pick.doneToday) line = 'Heute schon trainiert – stark! 🎉';
+  else if (todayD) line = `Heute steht <b>${esc(todayD.name)}</b> an. ${hr < 11 ? 'Guten Start in den Tag!' : 'Auf geht’s! 💪'}`;
+  else line = 'Heute ist Ruhetag – Erholung gehört zum Training dazu.';
+  let h = `<section class="hello">
+    <div class="sub">${esc(dateLabel(Date.now(), true))}</div>
+    <h2>Hallo${name ? ', ' + esc(name) : ''} 👋</h2>
+    <p>${line}</p></section>`;
+  if (!name) h += `<div class="card"><b>Wie heißt du?</b><div class="sub" style="margin:2px 0 10px">Dann begrüßt dich die App mit deinem Namen.</div>
+    <div style="display:flex;gap:8px"><input class="input" id="name-in" placeholder="Dein Name" maxlength="30" autocomplete="given-name" style="flex:1;min-width:0">
+    <button class="btn primary" data-act="saveName">Speichern</button></div></div>`;
+  h += installBanner() + backupBanner();
+  if (!days.length) {
+    return h + `<div class="card"><b>Noch kein Trainingsplan</b><div class="sub" style="margin:2px 0 12px">Leg deine Trainingstage und Übungen an – oder lass dir einen Plan-Link schicken (Mehr → Plan).</div>
+      <button class="btn primary block" data-act="goPlan">Plan erstellen</button></div>`;
+  }
+  // Heute
+  if (S.active) {
+    const { done, total } = workoutCounts();
+    h += `<div class="section-title">Läuft gerade</div><article class="card">
+      <div class="day-head"><div><div class="day-name">${esc(S.active.dayName)}</div>
+        <div class="sub">seit <b id="elapsed">0:00</b> · ${done} / ${total} Sätze</div></div></div>
+      <div class="progress"><i style="width:${total ? (done / total) * 100 : 0}%"></i></div>
+      <button class="btn primary" style="margin-top:12px" data-act="goTab" data-tab="train">Weiter trainieren</button></article>`;
+  } else {
+    const todayLogs = S.logs.filter(l => dayStart(l.startedAt) === dayStart(Date.now()));
+    h += '<div class="section-title">Heute</div>';
+    if (todayLogs.length) {
+      h += todayLogs.map(l => { const { sets, vol } = logStats(l); const pr = (l.prs || []).length;
+        return `<button class="card home-done" data-act="openLog" data-id="${l.id}"><span style="color:var(--green)">${ICON.check}</span>
+          <div class="grow"><b>${esc(l.dayName)} erledigt</b><div class="sub">${minTxt(l.endedAt - l.startedAt)} · ${sets} Sätze · ${fmtNum(Math.round(vol))} kg bewegt${pr ? ` · 🏆 ${pr} ${pr === 1 ? 'Rekord' : 'Rekorde'}` : ''}</div></div>${ICON.chev}</button>`; }).join('');
+    } else if (todayD) {
+      h += dayCard(todayD, 'Heute', true);
+    } else {
+      h += `<div class="card"><b>Ruhetag</b><div class="sub">Kein Training geplant – Muskeln wachsen in der Pause.</div></div>`;
+    }
+    if (!todayD && pick.id && findDay(pick.id)) h += `<div class="section-title">Als Nächstes</div>` + dayCard(findDay(pick.id), pick.label.replace('Als Nächstes · ', ''), false);
+  }
+  // Woche
+  const w = weekStats();
+  const tdy = dayStart(Date.now());
+  const dots = WD.map((wd, k) => {
+    const t = addDays(w.thisWs, k), p = planOn(t);
+    let cls = 'wdot';
+    if (w.trained.has(t)) cls += ' done'; else if (w.sick.has(t)) cls += ' sick';
+    else if (p.d) cls += t >= tdy ? ' plan' : (!p.x ? ' miss' : '');
+    if (t === tdy) cls += ' today';
+    return `<div class="${cls}"><i></i><span>${wd}</span></div>`;
+  }).join('');
+  const prWeek = S.logs.filter(l => l.startedAt >= w.thisWs).reduce((n, l) => n + (l.prs || []).length, 0);
+  const pm = planMuscles(), cnt = muscleCounts(w.thisWs);
+  const missing = S.logs.some(l => l.startedAt >= w.thisWs) ? [...pm].filter(k => !cnt[k] && MUSCLE_DE[k]).map(k => MUSCLE_DE[k]) : [];
+  h += `<div class="section-title">Diese Woche</div>
+    <button class="card home-week" data-act="goTab" data-tab="log">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;width:100%">
+        <div><div class="sub">Trainings</div><div class="big">${w.c} / ${w.req}</div></div>
+        <div style="text-align:right"><div class="sub">Serie</div><div class="big">${w.streak} ${w.streak === 1 ? 'Woche' : 'Wochen'}${w.streak >= 2 ? ' 🔥' : ''}</div></div>
+      </div>
+      <div class="wdots">${dots}</div>
+      ${prWeek ? `<div class="sub">🏆 ${prWeek} ${prWeek === 1 ? 'neuer Rekord' : 'neue Rekorde'} diese Woche</div>` : ''}
+      ${missing.length ? `<div class="sub">Noch nicht dran: ${missing.slice(0, 5).join(', ')}${missing.length > 5 ? ' …' : ''}</div>` : ''}
+    </button>`;
+  // Körpergewicht (mit Schnell-Eintrag)
+  const b = bodySorted(), lastB = b[b.length - 1];
+  const bwToday = lastB && dayStart(lastB.t) === tdy;
+  h += `<div class="section-title">Gewicht${bwToday ? '' : ' · heute noch offen'}</div>` + renderBody();
+  // Letztes Training (falls nicht heute)
+  const lastL = S.logs.find(l => dayStart(l.startedAt) !== tdy);
+  if (lastL) {
+    const { sets, vol } = logStats(lastL);
+    h += `<div class="section-title">Letztes Training</div><div class="list"><button class="row" data-act="openLog" data-id="${lastL.id}"><div class="grow">
+      <div class="title">${esc(lastL.dayName)} <span class="muted" style="font-weight:400">· ${relDay(lastL.startedAt)}</span></div>
+      <div class="sub">${minTxt(lastL.endedAt - lastL.startedAt)} · ${sets} Sätze · ${fmtNum(Math.round(vol))} kg bewegt</div></div>${ICON.chev}</button></div>`;
+  }
+  return h;
+}
+
 /* ----- Kalender-Planung -----
    Grundlage sind die Wochentage im Plan. Einzelne Tage lassen sich überschreiben:
    S.cal[Tagesbeginn] = { d: Tag-ID oder null (fällt aus), x: true = Extra-Training (zählt nicht zum Wochenziel) } */
@@ -508,6 +621,7 @@ function startWorkout(dayId) {
       };
     }),
   };
+  V.tab = 'train';
   save(); render(); scrollTo(0, 0); wake();
 }
 function finishSheet() {
@@ -781,18 +895,24 @@ function renderLog() {
     <select class="input" data-field="chartName">${names.map(n => `<option ${n === chartName ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
     ${exerciseChart(chartName)}</div>`;
   h += renderRecords();
-  h += '<div class="section-title">Trainings</div><div class="list">';
-  for (const l of S.logs) {
-    let sets = 0, vol = 0;
-    for (const e of l.entries) for (const s of e.sets) if (s.done) { sets++; vol += s.weight * s.reps; }
+  h += '<div class="section-title">Letzte Trainings</div><div class="list">';
+  for (const l of V.allLogs ? S.logs : S.logs.slice(0, 3)) {
+    const { sets, vol } = logStats(l);
     const pr = (l.prs || []).length;
     h += `<button class="row" data-act="openLog" data-id="${l.id}"><div class="grow">
       <div class="title">${esc(l.dayName)} <span class="muted" style="font-weight:400">· ${fmtDate(l.startedAt)}</span>${pr ? ` <span title="Rekorde">🏆${pr > 1 ? '×' + pr : ''}</span>` : ''}</div>
       <div class="sub">${fmtDur(l.endedAt - l.startedAt)} Dauer · ${sets} Sätze · ${fmtNum(Math.round(vol))} kg bewegt</div>
       ${l.note ? `<div class="sub" style="font-style:italic">„${esc(l.note)}“</div>` : ''}</div>${ICON.chev}</button>`;
   }
-  return h + '</div>';
+  return h + moreRow('allLogs', S.logs.length) + '</div>';
 }
+function logStats(l) {
+  let sets = 0, vol = 0;
+  for (const e of l.entries) for (const s of e.sets) if (s.done) { sets++; vol += s.weight * s.reps; }
+  return { sets, vol };
+}
+// Letzte Zeile einer gekürzten Liste: „Alle X anzeigen“ / „Weniger anzeigen“
+const moreRow = (key, n) => n > 3 ? `<button class="row more-row" data-act="toggleList" data-k="${key}">${V[key] ? 'Weniger anzeigen' : `Alle ${n} anzeigen`}</button>` : '';
 
 /* Muskel-Übersicht: wie viele Sätze je Muskel (Hauptmuskel = 1, Hilfsmuskel = ½ Satz) */
 function musclesForEntry(e) {
@@ -801,11 +921,7 @@ function musclesForEntry(e) {
   const t = MUSCLES_BY_NAME[e.name];
   return t ? { p: t[0], s: t[1] } : null;
 }
-function renderHeat() {
-  const range = V.heat || 'w';
-  const from = range === 'w' ? weekStart(Date.now()) : dayStart(Date.now()) - 27 * DAY;
-  const planMus = new Set(allExercises().flatMap(o => hasMuscles(o) ? [...o.muscles.p, ...o.muscles.s] : []));
-  if (!planMus.size) return '';
+function muscleCounts(from) {
   const cnt = {};
   for (const l of S.logs) {
     if (l.startedAt < from) continue;
@@ -816,6 +932,15 @@ function renderHeat() {
       for (const k of m.s) cnt[k] = (cnt[k] || 0) + n / 2;
     }
   }
+  return cnt;
+}
+const planMuscles = () => new Set(allExercises().flatMap(o => hasMuscles(o) ? [...o.muscles.p, ...o.muscles.s] : []));
+function renderHeat() {
+  const range = V.heat || 'w';
+  const from = range === 'w' ? weekStart(Date.now()) : dayStart(Date.now()) - 27 * DAY;
+  const planMus = planMuscles();
+  if (!planMus.size) return '';
+  const cnt = muscleCounts(from);
   // Stufen pro Woche: 1–5 wenig, 6–11 mittel, ab 12 viel (bei 4 Wochen das Vierfache)
   const f = range === 'w' ? 1 : 4;
   const lvl = v => !v ? 0 : v < 6 * f ? 1 : v < 12 * f ? 2 : 3;
@@ -840,7 +965,7 @@ function renderHeat() {
 /* Wochenübersicht: Trainings diese Woche, Serie, Kalender der letzten 6 Wochen */
 function weekStart(t) { const d = new Date(dayStart(t)); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); }
 function prevWeek(ws) { const d = new Date(ws); d.setDate(d.getDate() - 7); return d.getTime(); }
-function renderWeek() {
+function weekStats() {
   const sch = hasSchedule();
   const perWeek = new Map(); // weekStart -> Set(dayStart)
   const trained = new Set();
@@ -870,6 +995,10 @@ function renderWeek() {
     if (r === 0) continue;
     if (cnt(ws) >= r) streak++; else break;
   }
+  return { trained, sick, thisWs, streak, c: cnt(thisWs), req: required(thisWs), planned: planned(thisWs) };
+}
+function renderWeek() {
+  const { trained, sick, thisWs, streak, c, req, planned } = weekStats();
   // Kalender: 5 Wochen zurück, diese und nächste Woche – jeder Tag antippbar
   let start = thisWs;
   for (let k = 0; k < 5; k++) start = prevWeek(start);
@@ -888,8 +1017,7 @@ function renderWeek() {
     const lbl = p.d && !trained.has(t) && !sick.has(t) && t >= today ? `<small>${esc(shortName(p.d))}</small>` : '';
     cells += `<button class="${cls}" data-act="calDay" data-t="${t}" aria-label="${fmtDate(t)}"><span>${new Date(t).getDate()}</span>${lbl}</button>`;
   }
-  const c = cnt(thisWs), req = required(thisWs);
-  const sickThisWeek = planned(thisWs) - req;
+  const sickThisWeek = planned - req;
   return `<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:baseline">
       <div><div class="sub">Diese Woche</div><div class="big">${c} / ${req} <span class="sub">Trainings${sickThisWeek ? ` (${sickThisWeek}× krank)` : ''}</span></div></div>
@@ -968,8 +1096,9 @@ function renderBody() {
       <span class="linkbtn" style="font-size:15px">Verlauf${ICON.chev}</span>
     </button>
     ${pts.length > 1 ? `<div data-act="openWeight">${bwChart(pts, { h: 120, goal: S.settings.goalKg, mini: true })}</div>` : '<p class="sub" style="margin:6px 0 0">Trag regelmäßig dein Gewicht ein – ab zwei Einträgen siehst du hier die Kurve.</p>'}
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <div class="unit-wrap" style="flex:1"><input class="input" id="bw" inputmode="decimal" placeholder="Gewicht heute"><span>kg</span></div>
+    <div class="bw-quick">
+      <div class="unit-wrap" style="flex:1;min-width:0"><input class="input" id="bw" inputmode="decimal" placeholder="Gewicht"><span>kg</span></div>
+      <input class="input bw-qtime" type="time" id="bw-qtime" value="${hhmm()}" data-auto="1" aria-label="Uhrzeit">
       <button class="btn primary" data-act="addBw">Eintragen</button>
     </div>
   </div>`;
@@ -992,9 +1121,11 @@ function bwWhen(dateVal, timeVal, keepT) {
   if (keepT && dayStart(keepT) === dayStart(d)) return keepT;
   return dayStart(d) === dayStart(Date.now()) ? Date.now() : d;
 }
+const hhmm = (t = Date.now()) => new Date(t).toTimeString().slice(0, 5);
 const bwWhenTxt = p => fmtDate(p.t) + (p.time ? ` · ${p.time} Uhr` : '');
-const timeField = (id, val) => `<label class="field"><span>Uhrzeit (optional)</span><div class="time-wrap">
-  <input class="input" type="time" id="${id}" value="${val || ''}"><button type="button" class="time-clear" data-act="clearTime" data-for="${id}" aria-label="Uhrzeit leeren"${val ? '' : ' hidden'}>×</button></div></label>`;
+// auto = Feld zeigt „jetzt“ und läuft mit, bis man es selbst ändert
+const timeField = (id, val, auto) => `<label class="field"><span>Uhrzeit</span><div class="time-wrap">
+  <input class="input" type="time" id="${id}" value="${val || ''}"${auto ? ' data-auto="1"' : ''}><button type="button" class="time-clear" data-act="clearTime" data-for="${id}" aria-label="Uhrzeit leeren"${val ? '' : ' hidden'}>×</button></div></label>`;
 function addBodyEntry(t, kg, time = null) {
   S.body = (S.body || []).filter(p => dayStart(p.t) !== dayStart(t)); // ein Eintrag pro Tag
   S.body.push(time ? { t, kg, time } : { t, kg });
@@ -1085,7 +1216,7 @@ function renderWeight() {
     <div class="card">
       <div class="grid2">
         <label class="field"><span>Datum</span><input class="input" type="date" id="bw-date" value="${toIsoDate(Date.now())}" max="${toIsoDate(Date.now())}"></label>
-        ${timeField('bw-time', '')}
+        ${timeField('bw-time', hhmm(), true)}
       </div>
       <label class="field"><span>Gewicht</span><div class="unit-wrap"><input class="input" id="bw-kg" inputmode="decimal" placeholder="${last ? fmtNum(last.kg) : '80'}"><span>kg</span></div></label>
       <button class="btn primary block" data-act="bwAddDated">Eintragen</button>
@@ -1141,7 +1272,7 @@ function bwPointerEnd(e) {
 }
 document.addEventListener('pointerdown', bwPointer);
 document.addEventListener('input', e => {
-  if (e.target.type === 'time') { const b = e.target.parentElement.querySelector('.time-clear'); if (b) b.hidden = !e.target.value; }
+  if (e.target.type === 'time') { delete e.target.dataset.auto; const b = e.target.parentElement.querySelector('.time-clear'); if (b) b.hidden = !e.target.value; }
 });
 document.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) bwPointer(e); });
 document.addEventListener("pointerleave", e => { if (e.target.matches && e.target.matches("svg.bwsvg")) bwPointerEnd(e); }, true);
@@ -1149,14 +1280,16 @@ document.addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') set
 
 /* Rekorde: bester Satz pro Übung */
 function renderRecords() {
-  const rows = [];
+  const recs = [];
   for (const name of exerciseNames()) {
     const pe = allExercises().find(e => e.name === name);
     const b = bestSet(pe && pe.id, name);
-    if (b) rows.push(`<div class="row"><div class="grow"><div class="title">${esc(name)}</div>
-      <div class="sub">${kgTxt(b.weight)} × ${b.reps} Wdh. · ${fmtDate(b.t)}</div></div><span>🏆</span></div>`);
+    if (b) recs.push({ name, b });
   }
-  return rows.length ? `<div class="section-title">Rekorde</div><div class="list">${rows.join('')}</div>` : '';
+  recs.sort((x, y) => y.b.t - x.b.t); // neueste Rekorde zuerst
+  const rows = (V.allRec ? recs : recs.slice(0, 3)).map(({ name, b }) => `<div class="row"><div class="grow"><div class="title">${esc(name)}</div>
+      <div class="sub">${kgTxt(b.weight)} × ${b.reps} Wdh. · ${fmtDate(b.t)}</div></div><span>🏆</span></div>`);
+  return rows.length ? `<div class="section-title">Rekorde</div><div class="list">${rows.join('')}${moreRow('allRec', recs.length)}</div>` : '';
 }
 
 function exerciseChart(name) {
@@ -1204,7 +1337,7 @@ function openLog(id) {
 
 /* ----- Mehr / Einstellungen ----- */
 let installEvt = null;
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (V.tab === 'train' || V.tab === 'more') render(); });
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (V.tab === 'home' || V.tab === 'train' || V.tab === 'more') render(); });
 const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const CLOUD = IS_IOS ? 'iCloud' : 'Drive';
@@ -1223,6 +1356,11 @@ function installBanner() {
 function renderMore() {
   setTop('Mehr');
   return `${installBanner()}
+    <div class="section-title">Profil</div>
+    <div class="list">
+      <label class="toggle"><span>Dein Name (für die Begrüßung)</span>
+        <input class="input" style="width:140px" data-field="name" value="${esc(S.settings.name || '')}" placeholder="Name" maxlength="30" autocomplete="given-name"></label>
+    </div>
     <div class="section-title">Training</div>
     <div class="list">
       <label class="toggle"><span>Standard-Pause für neue Übungen (Sekunden)</span>
@@ -1756,13 +1894,23 @@ const actions = {
   addBw() {
     const kg = num($('#bw').value);
     if (kg < 20 || kg > 400) { toast('Bitte ein Gewicht in kg eingeben (z. B. 82,5)'); return; }
-    addBodyEntry(Date.now(), kg);
-    save(); render(); toast(`${fmtKg(kg)} eingetragen`);
+    const ti = $('#bw-qtime');
+    const time = ti && !ti.dataset.auto ? ti.value || null : hhmm();
+    addBodyEntry(time ? bwWhen(toIsoDate(Date.now()), time) : Date.now(), kg, time);
+    save(); render(); toast(`${fmtKg(kg)} um ${time || hhmm()} Uhr eingetragen`);
   },
-  openWeight() { openSub('weight'); },
+  openWeight() { V.tab = 'log'; openSub('weight'); },
+  toggleList(el) { V[el.dataset.k] = !V[el.dataset.k]; render(); },
+  goTab(el) { selectTab(el.dataset.tab); },
+  saveName() {
+    const v = $('#name-in').value.trim();
+    if (!v) { toast('Bitte einen Namen eingeben'); return; }
+    S.settings.name = v.slice(0, 30); save(); render();
+  },
   bwRange(el) { bwRange = el.dataset.r; render(); },
   bwAddDated() {
-    const kg = num($('#bw-kg').value), time = $('#bw-time').value || null, t = bwWhen($('#bw-date').value, time);
+    const ti = $('#bw-time'), today = $('#bw-date').value === toIsoDate(Date.now());
+    const kg = num($('#bw-kg').value), time = ti.dataset.auto && today ? hhmm() : ti.value || null, t = bwWhen($('#bw-date').value, time);
     if (kg < 20 || kg > 400) { toast('Bitte ein Gewicht in kg eingeben (z. B. 82,5)'); return; }
     if (!t || dayStart(t) > dayStart(Date.now())) { toast('Bitte ein gültiges Datum wählen'); return; }
     addBodyEntry(t, kg, time);
@@ -1824,7 +1972,7 @@ function move(arr, id, d) {
 }
 
 /* ---------- Tab-Leiste mit verschiebbarer Auswahl-Pille ---------- */
-const TAB_ORDER = ['train', 'plan', 'log', 'more'];
+const TAB_ORDER = ['home', 'train', 'plan', 'log', 'more'];
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 function selectTab(t) {
   if (sheetOpen) closeSheet();
@@ -1969,6 +2117,8 @@ document.addEventListener('input', e => {
     save();
   } else if (f === 'dayName') {
     const d = findDay(V.sub); if (d) { d.name = e.target.value; $('#title').textContent = d.name || 'Trainingstag'; save(); }
+  } else if (f === 'name') {
+    S.settings.name = e.target.value.trim().slice(0, 30); save();
   } else if (f === 'defRest') {
     S.settings.rest = Math.max(0, Math.round(num(e.target.value))); save();
   }

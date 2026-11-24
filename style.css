@@ -52,7 +52,7 @@ main { padding: 4px 16px calc(var(--safe-b) + 150px); max-width: 640px; margin: 
 /* ---------- Tab-Leiste ---------- */
 #tabs {
   position: fixed; left: 12px; right: 12px; bottom: calc(var(--safe-b) + 10px); z-index: 20;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
   border-radius: 26px; padding: 6px; max-width: 520px; margin: 0 auto;
   touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
@@ -352,3 +352,30 @@ input[type="date"].input { min-height: 48px; }
 .time-wrap .input { min-height: 48px; padding-right: 40px; }
 .time-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.12); color: var(--text); font-size: 18px; line-height: 1; display: grid; place-items: center; }
 input[type="time"].input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: .6; }
+
+/* Gekürzte Listen: Zeile zum Auf-/Zuklappen */
+.row.more-row { justify-content: center; color: var(--accent); font-size: 15px; }
+/* Gewicht schnell eintragen: Gewicht · Uhrzeit · Knopf */
+.bw-quick { display: flex; gap: 8px; margin-top: 10px; }
+.bw-quick .bw-qtime { width: 76px; flex: none; text-align: center; padding-left: 4px; padding-right: 4px; }
+.bw-quick .bw-qtime::-webkit-calendar-picker-indicator { display: none; }
+.bw-quick .unit-wrap .input { padding-right: 36px; }
+.bw-quick .unit-wrap span { right: 12px; }
+.bw-quick .btn { flex: none; }
+/* Home */
+.hello { margin: 4px 4px 14px; }
+.hello h2 { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; margin: 2px 0 6px; }
+.hello p { margin: 0; color: var(--sub); font-size: 16px; }
+.hello p b { color: var(--text); }
+.home-up { color: var(--green); margin: -4px 0 12px; }
+.card.home-done, .card.home-week { display: flex; width: 100%; text-align: left; font: inherit; color: inherit; }
+.card.home-done { align-items: center; gap: 12px; }
+.card.home-week { flex-direction: column; align-items: stretch; gap: 8px; }
+.wdots { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 6px 0 2px; }
+.wdot { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--sub); font-size: 12px; }
+.wdot i { width: 26px; height: 26px; border-radius: 50%; background: var(--field); display: block; }
+.wdot.done i { background: var(--green); }
+.wdot.plan i { background: transparent; box-shadow: inset 0 0 0 2px var(--accent); }
+.wdot.miss i { background: rgba(255,69,58,0.35); }
+.wdot.sick i { background: rgba(255,214,10,0.45); }
+.wdot.today span { color: var(--text); font-weight: 700; }
