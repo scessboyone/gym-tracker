@@ -5,9 +5,10 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.11.0';
+const APP_VERSION = '0.12.0';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
+  '👆 Tab-Leiste: Finger auf der Leiste lassen und die Auswahl-Pille zum gewünschten Bereich schieben – loslassen wechselt',
   '📤 Plan teilen (Mehr → Plan): nur den Plan ohne Verlauf als Datei weitergeben – beim Laden wird nur der Plan ersetzt, der Verlauf bleibt',
   'Der eingebaute Beispielplan wurde entfernt – die App startet leer',
   '🍎 iPhone-Unterstützung: eigenes Icon, Vollbild, Backup über iCloud („In Dateien sichern“)',
@@ -280,6 +281,7 @@ function setTop(title, left = '', right = '') {
 }
 function render() {
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === V.tab));
+  placePill();
   const view = $('#view');
   if (V.tab === 'train') view.innerHTML = S.active ? renderWorkout() : renderDays();
   else if (V.tab === 'plan') view.innerHTML = V.sub && findDay(V.sub) ? renderDayEditor(findDay(V.sub)) : renderPlan();
@@ -1660,12 +1662,82 @@ function move(arr, id, d) {
   [arr[i], arr[j]] = [arr[j], arr[i]];
 }
 
+/* ---------- Tab-Leiste mit verschiebbarer Auswahl-Pille ---------- */
+function selectTab(t) {
+  if (sheetOpen) closeSheet();
+  if (V.sub) { V.sub = null; history.back(); }
+  V.tab = t; render(); scrollTo(0, 0);
+}
+const tabsEl = $('#tabs');
+const pill = document.createElement('div');
+pill.className = 'pill'; tabsEl.prepend(pill);
+const tabBtns = () => [...tabsEl.querySelectorAll('button')];
+function pillTo(x, w, lifted) {
+  pill.style.width = w + 'px';
+  pill.style.transform = `translateX(${x}px) scale(${lifted ? 1.12 : 1})`;
+}
+// Pille unter den aktiven Tab setzen (beim ersten Mal ohne Animation)
+function placePill() {
+  const b = tabBtns().find(x => x.dataset.tab === V.tab);
+  if (!b || !b.offsetWidth || tabDrag) return;
+  if (!pill.dataset.ready) { pill.classList.add('noanim'); requestAnimationFrame(() => requestAnimationFrame(() => pill.classList.remove('noanim'))); pill.dataset.ready = 1; }
+  pillTo(b.offsetLeft, b.offsetWidth, false);
+}
+window.addEventListener('resize', () => placePill());
+let tabDrag = null, tabHandledAt = 0;
+function tabAt(clientX) {
+  let best = null, dist = 1e9;
+  for (const b of tabBtns()) { const r = b.getBoundingClientRect(), d = Math.abs(clientX - (r.left + r.width / 2)); if (d < dist) { dist = d; best = b; } }
+  return best;
+}
+function tabDragStart() {
+  if (!tabDrag || tabDrag.active) return;
+  tabDrag.active = true; tabsEl.classList.add('drag');
+  if (navigator.vibrate) navigator.vibrate(8);
+  tabDragMove(tabDrag.x);
+}
+function tabDragMove(clientX) {
+  const r = tabsEl.getBoundingClientRect(), w = tabBtns()[0].offsetWidth, pad = 6;
+  const x = Math.max(pad, Math.min(r.width - pad - w, clientX - r.left - w / 2));
+  pillTo(x, w, true);
+  const b = tabAt(clientX);
+  if (b !== tabDrag.hover) {
+    if (tabDrag.hover) tabDrag.hover.classList.remove('hover');
+    b.classList.add('hover'); tabDrag.hover = b;
+    if (navigator.vibrate) navigator.vibrate(5);
+  }
+}
+tabsEl.addEventListener('pointerdown', e => {
+  if (e.button > 0) return;
+  tabDrag = { id: e.pointerId, x0: e.clientX, x: e.clientX, active: false, hover: null };
+  tabDrag.timer = setTimeout(tabDragStart, 220); // gedrückt halten -> Pille hebt sich an
+  try { tabsEl.setPointerCapture(e.pointerId); } catch { /* egal */ }
+});
+tabsEl.addEventListener('pointermove', e => {
+  if (!tabDrag || e.pointerId !== tabDrag.id) return;
+  tabDrag.x = e.clientX;
+  if (!tabDrag.active && Math.abs(e.clientX - tabDrag.x0) > 8) { clearTimeout(tabDrag.timer); tabDragStart(); }
+  else if (tabDrag.active) tabDragMove(e.clientX);
+});
+function tabDragEnd(e, cancel) {
+  if (!tabDrag || e.pointerId !== tabDrag.id) return;
+  const d = tabDrag; tabDrag = null;
+  clearTimeout(d.timer);
+  tabsEl.classList.remove('drag');
+  if (d.hover) d.hover.classList.remove('hover');
+  tabHandledAt = Date.now();
+  const b = cancel ? null : (d.active ? d.hover : tabAt(e.clientX));
+  if (b) selectTab(b.dataset.tab); else placePill();
+}
+tabsEl.addEventListener('pointerup', e => tabDragEnd(e, false));
+tabsEl.addEventListener('pointercancel', e => tabDragEnd(e, true));
+
 document.addEventListener('click', e => {
-  const tab = e.target.closest('#tabs button');
+  const tab = e.target.closest('#tabs button') || (e.target === tabsEl ? tabsEl : null);
   if (tab) {
-    if (sheetOpen) closeSheet();
-    if (V.sub) { V.sub = null; history.back(); }
-    V.tab = tab.dataset.tab; render(); scrollTo(0, 0);
+    // Antippen/Ziehen wird schon über pointerup erledigt; Klick nur noch für Tastatur
+    if (Date.now() - tabHandledAt < 600 || tab === tabsEl) return;
+    selectTab(tab.dataset.tab);
     return;
   }
   if (e.target.id === 'backdrop') { closeSheet(); return; }

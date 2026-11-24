@@ -51,9 +51,25 @@ main { padding: 4px 16px calc(var(--safe-b) + 150px); max-width: 640px; margin: 
   position: fixed; left: 12px; right: 12px; bottom: calc(var(--safe-b) + 10px); z-index: 20;
   display: grid; grid-template-columns: repeat(4, 1fr);
   border-radius: 26px; padding: 6px; max-width: 520px; margin: 0 auto;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
 #tabs button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; border-radius: 20px; color: var(--sub); font-size: 11px; }
-#tabs button.on { color: var(--text); background: rgba(255,255,255,0.08); }
+#tabs button { position: relative; z-index: 1; transition: color .2s; }
+#tabs button.on { color: var(--text); }
+/* Auswahl-Pille: federt zum aktiven Tab, lässt sich mit dem Finger verschieben */
+#tabs .pill {
+  position: absolute; top: 6px; bottom: 6px; left: 0; z-index: 0; pointer-events: none;
+  border-radius: 20px; background: rgba(255,255,255,0.08);
+  transition: transform .42s cubic-bezier(.3, 1.35, .5, 1), width .3s, background .2s, box-shadow .2s;
+}
+#tabs .pill.noanim { transition: none; }
+#tabs.drag .pill {
+  transition: transform .09s ease-out, background .2s, box-shadow .2s;
+  background: rgba(255,255,255,0.16);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.14);
+}
+#tabs.drag button.on:not(.hover) { color: var(--sub); }
+#tabs.drag button.hover { color: var(--text); }
 
 /* ---------- Karten ---------- */
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
