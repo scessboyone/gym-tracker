@@ -5,9 +5,10 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.16.2';
+const APP_VERSION = '0.16.3';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
+  'Feinschliff: Fenster wie „Neue Übung“ sind nicht mehr durchsichtig, Gewichts-Kopfzeile sauber ausgerichtet, „1 Satz“ statt „1 Sätze“',
   'Gewicht eintragen: Die Uhrzeit wird nicht mehr abgeschnitten, „Eintragen“ steht jetzt breit darunter',
   'Die Einstellung „Bildschirm anlassen“ ist weg: Während des Trainings bleibt der Bildschirm einfach an',
   'Neues Design: Hell und Dunkel (Mehr → Darstellung), sportlicher Apple-Stil mit blauem Akzent und Wochenring auf Home',
@@ -78,6 +79,7 @@ const ICON = {
   gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>',
 };
 
+const pl = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const SEP = '<span class="sep" aria-hidden="true"></span>';
 
 /* ---------- Speicher (IndexedDB) ---------- */
@@ -334,7 +336,7 @@ function renderDays() {
     h += `<article class="card day">
       <div class="day-head">
         <div><div class="day-name">${esc(d.name)}</div>
-        <div class="sub">${wds ? wds + SEP : ''}${d.exercises.length} Übungen${last ? SEP + 'zuletzt ' + relDay(last.startedAt) : ''}</div></div>
+        <div class="sub">${wds ? wds + SEP : ''}${pl(d.exercises.length, 'Übung', 'Übungen')}${last ? SEP + 'zuletzt ' + relDay(last.startedAt) : ''}</div></div>
         ${hi ? `<span class="badge">${esc(pick.label)}</span>` : ''}
       </div>
       <div class="day-ex">${d.exercises.map(e => esc(e.name)).join(', ') || 'Keine Übungen'}</div>
@@ -359,7 +361,7 @@ function dayCard(d, label, primary) {
   const ups = levelUps(d);
   return `<article class="card day">
     <div class="day-head"><div><div class="day-name">${esc(d.name)}</div>
-      <div class="sub">${d.exercises.length} Übungen${SEP}${sets} Sätze${SEP}ca. ${minTxt(dur)}</div></div>
+      <div class="sub">${pl(d.exercises.length, 'Übung', 'Übungen')}${SEP}${pl(sets, 'Satz', 'Sätze')}${SEP}ca. ${minTxt(dur)}</div></div>
       <span class="badge">${esc(label)}</span></div>
     <div class="day-ex">${d.exercises.map(e => esc(e.name)).join(', ') || 'Keine Übungen'}</div>
     ${ups.length ? `<p class="sub home-up">${ICON.up}Bereit zum Steigern: ${ups.map(esc).join(', ')}</p>` : ''}
@@ -412,7 +414,7 @@ function renderHome() {
     if (todayLogs.length) {
       h += todayLogs.map(l => { const { sets, vol } = logStats(l); const pr = (l.prs || []).length;
         return `<button class="card home-done" data-act="openLog" data-id="${l.id}"><span style="color:var(--green)">${ICON.check}</span>
-          <div class="grow"><b>${esc(l.dayName)} erledigt</b><div class="sub">${minTxt(l.endedAt - l.startedAt)}${SEP}${sets} Sätze${SEP}${fmtNum(Math.round(vol))} kg bewegt${pr ? `<span class="pr">${pr} PR</span>` : ''}</div></div>${ICON.chev}</button>`; }).join('');
+          <div class="grow"><b>${esc(l.dayName)} erledigt</b><div class="sub">${minTxt(l.endedAt - l.startedAt)}${SEP}${pl(sets, 'Satz', 'Sätze')}${SEP}${fmtNum(Math.round(vol))} kg bewegt${pr ? `<span class="pr">${pr} PR</span>` : ''}</div></div>${ICON.chev}</button>`; }).join('');
     } else if (todayD) {
       h += dayCard(todayD, 'Heute', true);
     } else {
@@ -454,7 +456,7 @@ function renderHome() {
     const { sets, vol } = logStats(lastL);
     h += `<div class="section-title">Letztes Training</div><div class="list"><button class="row" data-act="openLog" data-id="${lastL.id}"><div class="grow">
       <div class="title">${esc(lastL.dayName)} <span class="muted" style="font-weight:400">· ${relDay(lastL.startedAt)}</span></div>
-      <div class="sub">${minTxt(lastL.endedAt - lastL.startedAt)}${SEP}${sets} Sätze${SEP}${fmtNum(Math.round(vol))} kg bewegt</div></div>${ICON.chev}</button></div>`;
+      <div class="sub">${minTxt(lastL.endedAt - lastL.startedAt)}${SEP}${pl(sets, 'Satz', 'Sätze')}${SEP}${fmtNum(Math.round(vol))} kg bewegt</div></div>${ICON.chev}</button></div>`;
   }
   return h;
 }
@@ -711,7 +713,7 @@ function renderPlan() {
   }
   return `<div class="list">${S.plan.days.map((d, k) => `<div class="row">
       <button class="grow" style="text-align:left" data-act="openDay" data-id="${d.id}">
-        <div class="title">${esc(d.name)}</div><div class="sub">${(d.weekdays || []).map(i => WD[i]).join(', ') || 'Kein fester Tag'}${SEP}${d.exercises.length} Übungen</div></button>
+        <div class="title">${esc(d.name)}</div><div class="sub">${(d.weekdays || []).map(i => WD[i]).join(', ') || 'Kein fester Tag'}${SEP}${pl(d.exercises.length, 'Übung', 'Übungen')}</div></button>
       <button class="iconbtn" data-act="moveDay" data-id="${d.id}" data-d="-1" ${k === 0 ? 'disabled' : ''} aria-label="Nach oben">${ICON.up}</button>
       <button class="iconbtn" data-act="moveDay" data-id="${d.id}" data-d="1" ${k === S.plan.days.length - 1 ? 'disabled' : ''} aria-label="Nach unten">${ICON.down}</button>
     </div>`).join('')}</div>
@@ -728,7 +730,7 @@ function renderDayEditor(d) {
       <button class="grow" style="display:flex;gap:12px;align-items:center;text-align:left" data-act="editEx" data-id="${e.id}">
         ${exThumb(e)}
         <div style="min-width:0"><div class="title">${esc(e.name)}</div>
-        <div class="sub">${e.sets} × ${repTxt(e)} Wdh.${SEP}${kgTxt(e.weight)}${SEP}${e.rest} s Pause</div>
+        <div class="sub">${e.sets} × ${repTxt(e)} Wdh.${SEP}${kgTxt(e.weight)}${SEP}<span class="nw">${e.rest} s Pause</span></div>
         ${(e.alts || []).length ? `<div class="sub">Alternativen: ${e.alts.map(a => esc(a.name)).join(', ')}</div>` : ''}</div></button>
       <button class="iconbtn" data-act="moveEx" data-id="${e.id}" data-d="-1" ${k === 0 ? 'disabled' : ''} aria-label="Nach oben">${ICON.up}</button>
       <button class="iconbtn" data-act="moveEx" data-id="${e.id}" data-d="1" ${k === d.exercises.length - 1 ? 'disabled' : ''} aria-label="Nach unten">${ICON.down}</button>
@@ -913,7 +915,7 @@ function renderLog() {
     const pr = (l.prs || []).length;
     h += `<button class="row" data-act="openLog" data-id="${l.id}"><div class="grow">
       <div class="title">${esc(l.dayName)} <span class="muted" style="font-weight:400;margin-left:4px">${fmtDate(l.startedAt)}</span>${pr ? `<span class="pr" title="Rekorde">${pr} PR</span>` : ''}</div>
-      <div class="sub">${fmtDur(l.endedAt - l.startedAt)} Dauer${SEP}${sets} Sätze${SEP}${fmtNum(Math.round(vol))} kg bewegt</div>
+      <div class="sub">${fmtDur(l.endedAt - l.startedAt)} Dauer${SEP}${pl(sets, 'Satz', 'Sätze')}${SEP}${fmtNum(Math.round(vol))} kg bewegt</div>
       ${l.note ? `<div class="sub" style="font-style:italic">„${esc(l.note)}“</div>` : ''}</div>${ICON.chev}</button>`;
   }
   return h + moreRow('allLogs', S.logs.length) + '</div>';
@@ -1066,7 +1068,7 @@ function calDaySheet(t, mode = null) {
     setSheet(`${head(extra ? 'Extra-Training' : 'Anderes Training', true)}
       <p class="sub" style="margin-top:0">${extra ? 'Welches Training willst du' : 'Statt ' + esc(findDay(p.d).name) + ' – welches Training'} am ${esc(dateLabel(t, true))} machen?</p>
       <div class="list">${S.plan.days.filter(d => d.id !== p.d).map(d => `<button class="row" data-act="calSetDay" data-t="${t}" data-id="${d.id}" data-x="${extra ? 1 : 0}">
-        <div class="grow"><div class="title">${esc(d.name)}</div><div class="sub">${d.exercises.length} Übungen</div></div>${ICON.chev}</button>`).join('')}</div>
+        <div class="grow"><div class="title">${esc(d.name)}</div><div class="sub">${pl(d.exercises.length, 'Übung', 'Übungen')}</div></div>${ICON.chev}</button>`).join('')}</div>
       ${extra ? '<p class="sub">Extra-Trainings zählen nicht zum Wochenziel – sie sind ein Bonus.</p>' : ''}`);
     return;
   }

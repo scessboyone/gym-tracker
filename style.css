@@ -14,7 +14,7 @@
   --card-solid: #ffffff;
   --card-2: #f7f7fa;
   --glass: rgb(249 249 251 / 0.82);
-  --sheet: rgb(242 242 247 / 0.96);
+  --sheet: #f2f2f7;
   --field: rgb(118 118 128 / 0.12);
   --field-2: rgb(118 118 128 / 0.2);
   --line: rgb(60 60 67 / 0.14);
@@ -65,7 +65,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #000000; --card: #1c1c1e; --card-solid: #1c1c1e; --card-2: #232326;
-    --glass: rgb(28 28 30 / 0.72); --sheet: rgb(28 28 30 / 0.94);
+    --glass: rgb(28 28 30 / 0.72); --sheet: #1c1c1e;
     --field: rgb(118 118 128 / 0.24); --field-2: rgb(118 118 128 / 0.34); --line: rgb(255 255 255 / 0.1);
     --text: #f5f5f7; --sub: #98989f;
     --accent: #3b9bff; --accent-soft: rgb(10 132 255 / 0.18); --accent-ring: rgb(10 132 255 / 0.7);
@@ -81,7 +81,7 @@
 }
 :root[data-theme="dark"] {
   --bg: #000000; --card: #1c1c1e; --card-solid: #1c1c1e; --card-2: #232326;
-  --glass: rgb(28 28 30 / 0.72); --sheet: rgb(28 28 30 / 0.94);
+  --glass: rgb(28 28 30 / 0.72); --sheet: #1c1c1e;
   --field: rgb(118 118 128 / 0.24); --field-2: rgb(118 118 128 / 0.34); --line: rgb(255 255 255 / 0.1);
   --text: #f5f5f7; --sub: #98989f;
   --accent: #3b9bff; --accent-soft: rgb(10 132 255 / 0.18); --accent-ring: rgb(10 132 255 / 0.7);
@@ -387,7 +387,7 @@ button.cal-d.plan { color: var(--text); }
 /* Eigene Dialoge: sichtbar ohne Skript-Zustand, erscheint mit kurzer Animation */
 #dlg { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: var(--scrim); animation: fade var(--dur-short) ease-out; }
 .dlg-card {
-  width: 100%; max-width: 360px; background: var(--sheet);
+  width: 100%; max-width: 360px; background: var(--sheet); color: var(--text);
   -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%);
   border-radius: 24px; padding: 20px 16px 16px; box-shadow: 0 20px 60px var(--shadow-lift);
   animation: pop var(--dur-short) var(--ease-spring);
@@ -441,6 +441,8 @@ button.cal-d.plan { color: var(--text); }
 input[type="date"].input { min-height: 48px; }
 .chart .bw-head svg { width: 18px; height: 18px; display: inline-block; }
 .bw-head .linkbtn { align-self: center; }
+.bw-head .grow { flex: 1; min-width: 0; }
+.big .sub { display: inline-block; font-family: var(--font-body); font-size: 14px; font-weight: 600; letter-spacing: 0; }
 
 /* Namensvorschläge im Übungs-Editor */
 .sug { margin: 0 0 12px; }
@@ -502,3 +504,4 @@ input[type="time"].input::-webkit-calendar-picker-indicator { opacity: .6; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+.nw { white-space: nowrap; }
