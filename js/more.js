@@ -20,6 +20,33 @@ function installBanner() {
     <div class="grow"><b>Als App installieren</b><div class="sub">Eigenes Icon, Vollbild, funktioniert offline.</div></div>
     <button class="btn primary small" data-act="install">Installieren</button></div>`;
 }
+// Backup-Anleitung hinter dem i-Knopf, umschaltbar zwischen iPhone und Android (z. B. um jemand anderem zu helfen)
+const BACKUP_HELP = {
+  ios: [
+    ['Backup machen', ['Mehr → Backup → „In iCloud sichern“ antippen.', 'Im Teilen-Menü „In Dateien sichern“ wählen.',
+      'iCloud Drive auswählen (am besten einen Ordner „Gym“ anlegen) → Sichern.']],
+    ['Zurückholen', ['App über Safari → Teilen → „Zum Home-Bildschirm“ installieren und öffnen.',
+      'Mehr → Backup → „Backup laden“ antippen.', 'In iCloud Drive die neueste gym-backup-….txt wählen → Laden.']],
+    ['Gut zu wissen', ['Nach 3 Tagen ohne Backup erinnert die Startseite mit „Backup fällig“.',
+      'iOS kann Daten von Web-Apps löschen, wenn die App länger nicht geöffnet wurde – das Backup in iCloud schützt davor.']],
+  ],
+  android: [
+    ['Backup machen', ['Mehr → Backup → „In Google Drive sichern“ antippen.', 'Die Datei landet im Drive-Ordner „Gym Tracker“.',
+      'Ohne Google: „Als Datei speichern“ legt sie in Downloads ab.']],
+    ['Zurückholen', ['Mehr → Backup → „Aus Google Drive laden“ – nimmt automatisch das neueste Backup.',
+      'Oder „Backup laden“ und die Datei aus Drive oder Downloads wählen.']],
+    ['Gut zu wissen', ['Nach 7 Tagen ohne Backup erinnert die Startseite mit „Backup fällig“.']],
+  ],
+};
+function backupHelpSheet(os) {
+  const seg = `<div class="seg" style="margin-top:0">${[['ios', 'iPhone'], ['android', 'Android']].map(([v, l]) =>
+    `<button class="${os === v ? 'on' : ''}" data-act="backupHelp" data-v="${v}" aria-pressed="${os === v}">${l}</button>`).join('')}</div>`;
+  setSheet(`<div class="sheet-head"><h2>Backup</h2><button class="linkbtn" data-act="closeSheet">Fertig</button></div>${seg}
+    ${BACKUP_HELP[os].map(([h, steps], i) => `<div class="section-title"${i ? '' : ' style="margin-top:20px"'}>${h}</div>
+      <${i < 2 ? 'ol' : 'ul'} class="instr" style="color:var(--text);font-size:15px">${steps.map(s => `<li>${esc(s)}</li>`).join('')}</${i < 2 ? 'ol' : 'ul'}>`).join('')}
+    <p class="sub">Das Backup enthält alles: Plan, Verlauf, Gewicht, Einstellungen und eigene Fotos. Laden ersetzt alle Daten auf dem Gerät.
+      Nur den Plan weitergeben: unter Plan „Plan als Link teilen“.</p>`);
+}
 function renderMore() {
   setTop('Mehr');
   return `${installBanner()}
@@ -35,7 +62,7 @@ function renderMore() {
       <label class="toggle"><span>Standard-Pause für neue Übungen (Sekunden)</span>
         <input class="input" style="width:90px;text-align:center" inputmode="numeric" data-field="defRest" value="${S.settings.rest}"></label>
     </div>
-    <div class="section-title">Backup</div>
+    <div class="section-title">Backup<button class="info-btn" data-act="backupHelp" aria-label="Anleitung: Backup">${ICON.info}</button></div>
     <div class="list">
       ${IS_IOS ? `<button class="row" data-act="driveBackup"><div class="grow"><div class="title">In iCloud sichern</div>
         <div class="sub">Öffnet „Teilen“ → „In Dateien sichern“ → iCloud Drive wählen → Sichern</div></div>${ICON.chev}</button>`
