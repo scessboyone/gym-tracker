@@ -5,9 +5,11 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.19.2';
+const APP_VERSION = '0.20.0';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
+  'Training: Übungsname steht oben, die Grafik ist etwas kleiner – alle Sätze passen ohne Scrollen auf den Bildschirm',
+  'Monatsrückblick und Übungsverlauf aufgeräumt: Vergleich einmal oben, Sätze kürzer („67,5 kg: 10, 9, 8 Wdh.“)',
   'Monatsrückblick: zeigt jetzt, wie viele geplante Trainings du geschafft hast; „Zurück“ führt wieder dorthin, wo du hergekommen bist',
   'Neu: Monatsrückblick unter Verlauf – Trainings, Zeit, kg, Rekorde, Fortschritte und Muskeln pro Monat, mit Vergleich zum Vormonat',
   'Training im Vollbild: große Muskel-Grafik, große Zahlen, Weiter/Zurück unten – wischen wechselt die Übung, „Minimieren“ bringt die Tab-Leiste zurück. Läuft ein Training, öffnet die App direkt dort',
@@ -527,7 +529,10 @@ function summarize(sets) {
   if (!sets || !sets.length) return '';
   const same = sets.every(s => s.weight === sets[0].weight && s.reps === sets[0].reps);
   if (same) return `${sets.length} × ${sets[0].reps} Wdh. mit ${kgTxt(sets[0].weight)}`;
-  return sets.map(s => `${fmtNum(s.weight)} kg × ${s.reps}`).join(', ');
+  // Gleiche Gewichte zusammenfassen: „67,5 kg: 10, 9, 8 Wdh.“
+  const g = [];
+  for (const x of sets) { const l = g[g.length - 1]; if (l && l.w === x.weight) l.r.push(x.reps); else g.push({ w: x.weight, r: [x.reps] }); }
+  return g.map(x => `${kgTxt(x.w)}: ${x.r.join(', ')}`).join('; ') + ' Wdh.';
 }
 function workoutCounts() {
   let done = 0, total = 0;
@@ -546,8 +551,7 @@ function workoutHead() {
   const n = A.order.length, en = A.entries[A.order[A.pos]];
   const next = A.pos < n - 1 ? A.entries[A.order[A.pos + 1]].name : '';
   return `<section class="wk-head" id="wk-head">
-    <div class="wk-meta"><span class="wk-title">${esc(A.dayName)}</span><span><b id="elapsed">${fmtDur(Date.now() - A.startedAt)}</b></span></div>
-    <div class="wk-meta"><span>${done} / ${total} Sätze</span></div>
+    <div class="wk-meta"><span class="wk-title">${esc(A.dayName)}</span><span>${done} / ${total} Sätze<b id="elapsed">${fmtDur(Date.now() - A.startedAt)}</b></span></div>
     <div class="steps" role="tablist" aria-label="Übungen">${A.order.map((idx, k) => {
       const e = A.entries[idx], d = e.sets.filter(x => x.done).length, pct = e.sets.length ? (d / e.sets.length) * 100 : 0;
       return `<button class="step${k === A.pos ? ' on' : ''}${entryDone(e) ? ' done' : ''}" data-act="exGo" data-k="${k}" role="tab" aria-selected="${k === A.pos}" aria-label="${esc(e.name)}"><i style="width:${pct}%"></i></button>`;
@@ -586,15 +590,15 @@ function renderEntry(en, i) {
   const levelUp = pe && pe.repMax && lastSets && lastSets.length >= sets && lastSets.every(s => s.reps >= pe.repMax);
   const variants = base && (base.alts || []).length ? [base, ...base.alts] : null;
   return `<article class="card ex ex-focus ${allDone ? 'done' : ''}" id="en-${i}">
+    <div class="ex-title">
+      <h2 class="ex-name">${esc(en.name)}</h2>
+      ${variants ? `<button class="iconbtn sw" data-act="switchVar" data-i="${i}" aria-label="Übung wechseln" title="Wechseln zu: ${esc(variants.filter(o => o.id !== effId(en)).map(o => o.name).join(', '))}">${ICON.swap}</button>` : ''}
+    </div>
     <button class="ex-fig" data-act="exInfo" data-i="${i}" aria-label="Muskeln und Anleitung zu ${esc(en.name)}">
       ${exThumb(pe || en, 'musbig')}
       <span class="ex-fig-hint">Anleitung${ICON.chev}</span>
     </button>
     ${muscleLegend(pe || en)}
-    <div class="ex-title">
-      <h2 class="ex-name">${esc(en.name)}</h2>
-      ${variants ? `<button class="iconbtn sw" data-act="switchVar" data-i="${i}" aria-label="Übung wechseln" title="Wechseln zu: ${esc(variants.filter(o => o.id !== effId(en)).map(o => o.name).join(', '))}">${ICON.swap}</button>` : ''}
-    </div>
     ${target ? `<div class="sub">${target}</div>` : ''}
     ${last ? `<div class="sub">Letztes Mal: ${esc(last)}</div>` : ''}
     ${pe ? `<button class="note ${pe.note ? '' : 'blank'}" data-act="editNote" data-i="${i}" aria-label="Notiz bearbeiten">${ICON.edit}<span>${pe.note ? esc(pe.note) : 'Notiz hinzufügen'}</span></button>` : ''}
@@ -1004,7 +1008,7 @@ function renderMonth(k) {
   const dNow = new Date().getDate(), running = k === cur;
   const M = monthStats(k), P = monthStats(monthKey(monthStart(k, -1)), running ? dNow : 31);
   M.b = monthStart(k, 1);
-  const prevName = running ? `1.–${dNow}.${monthParts(monthKey(monthStart(k, -1)))[1]}.` : monthOnly(monthKey(monthStart(k, -1)));
+  const prevName = running ? `1. bis ${dNow}. ${monthOnly(monthKey(monthStart(k, -1)))}` : monthOnly(monthKey(monthStart(k, -1)));
   const nav = `<div class="card m-nav">
     <button class="iconbtn" data-act="monthGo" data-k="${monthKey(monthStart(k, -1))}" ${k <= first ? 'disabled' : ''} aria-label="Voriger Monat">${ICON.back}</button>
     <h2>${monthLabel(k)}</h2>
@@ -1015,12 +1019,16 @@ function renderMonth(k) {
   const days = new Set(M.logs.map(l => dayStart(l.startedAt)));
   const { planned, hit } = monthPlanned(M.a, M.b, days);
   const dDur = M.dur - P.dur;
-  const cmp = (now, before, f = v => v) => P.logs.length ? `<div class="m-cmp ${now > before ? 'up' : ''}">${diffTxt(f(now) - f(before))} zum ${prevName}</div>` : '';
+  const cmpBox = (up, txt) => P.logs.length ? `<div class="m-cmp ${up ? 'up' : ''}">${txt}</div>` : '';
+  const cmp = (now, before) => cmpBox(now > before, diffTxt(now - before));
+  const inT = M.vol >= 10000 || P.vol >= 10000, dVol = M.vol - P.vol;
+  const volDiff = (dVol >= 0 ? '+' : '−') + (inT ? `${fmtNum(Math.round(Math.abs(dVol) / 100) / 10)} t` : `${fmtNum(Math.round(Math.abs(dVol)))} kg`);
   const stats = `<div class="card m-stats">
+    ${P.logs.length ? `<div class="m-vs sub">Vergleich mit ${prevName}</div>` : ''}
     <div><div class="big">${M.logs.length}</div><div class="sub">${M.logs.length === 1 ? 'Training' : 'Trainings'}${planned ? `, ${hit} von ${planned} geplanten geschafft` : ''}</div>${cmp(M.logs.length, P.logs.length)}</div>
-    <div><div class="big">${minTxt(M.dur).replace(' min', '<small> min</small>').replace(' h', '<small> h</small>')}</div><div class="sub">Trainingszeit</div>${P.logs.length ? `<div class="m-cmp ${dDur >= 6e4 ? 'up' : ''}">${Math.abs(dDur) < 6e4 ? '±0 min' : (dDur > 0 ? '+' : '−') + minTxt(Math.abs(dDur))} zum ${prevName}</div>` : ''}</div>
+    <div><div class="big">${minTxt(M.dur).replace(' min', '<small> min</small>').replace(' h', '<small> h</small>')}</div><div class="sub">Trainingszeit</div>${cmpBox(dDur >= 6e4, Math.abs(dDur) < 6e4 ? '±0 min' : (dDur > 0 ? '+' : '−') + minTxt(Math.abs(dDur)))}</div>
     <div><div class="big">${M.sets}</div><div class="sub">${M.sets === 1 ? 'Satz' : 'Sätze'}</div>${cmp(M.sets, P.sets)}</div>
-    <div><div class="big">${kgShort(M.vol).replace(/ (kg|t)$/, '<small> $1</small>')}</div><div class="sub">bewegt</div>${P.logs.length ? `<div class="m-cmp ${M.vol > P.vol ? 'up' : ''}">${M.vol >= P.vol ? '+' : '−'}${kgShort(Math.abs(M.vol - P.vol))} zum ${prevName}</div>` : ''}</div>
+    <div><div class="big">${(inT ? `${fmtNum(Math.round(M.vol / 100) / 10)} t` : `${fmtNum(Math.round(M.vol))} kg`).replace(/ (kg|t)$/, '<small> $1</small>')}</div><div class="sub">bewegt</div>${cmpBox(dVol > 0, volDiff)}</div>
   </div>`;
 
   // Kalender des Monats
@@ -1059,7 +1067,7 @@ function renderMonth(k) {
   const mMax = mc.length ? mc[0][1] : 1;
   const mus = mc.length ? `<div class="section-title">Muskeln</div><div class="card m-bars">${mc.slice(0, 6).map(([m, v]) => `<div class="m-bar">
       <span>${MUSCLE_DE[m]}</span><div class="m-track"><i style="width:${Math.max(4, (v / mMax) * 100).toFixed(0)}%"></i></div><b>${fmtNum(Math.round(v * 2) / 2)}</b></div>`).join('')}
-      <p class="sub" style="margin:8px 0 0">Sätze pro Muskel, Hilfsmuskel zählt halb.</p></div>` : '';
+      <p class="sub m-note">Sätze pro Muskel, Hilfsmuskel zählt halb.</p></div>` : '';
 
   // Höhepunkte
   const exCnt = new Map();
@@ -1106,7 +1114,8 @@ function renderExList() {
     const pe = allExercises().find(e => e.name === r.name);
     const b = bestSet(pe && pe.id, r.name);
     return `<button class="row" data-act="openEx" data-name="${esc(r.name)}"><div class="grow"><div class="title">${esc(r.name)}</div>
-      <div class="sub">${pl(r.n, 'Training', 'Trainings')}${SEP}zuletzt ${relDay(r.last)}${b ? `${SEP}Bestwert ${kgTxt(b.weight)} × ${b.reps}` : ''}</div></div>${ICON.chev}</button>`;
+      <div class="sub">${pl(r.n, 'Training', 'Trainings')}${SEP}zuletzt ${relDay(r.last)}</div>
+      ${b ? `<div class="sub">Bestwert <span class="nw">${kgTxt(b.weight)} × ${b.reps}</span></div>` : ''}</div>${ICON.chev}</button>`;
   }).join('')}</div>`;
 }
 function renderExHist(name) {
@@ -1124,7 +1133,7 @@ function renderExHist(name) {
     <div class="section-title">Alle Trainings</div>
     <div class="list">${hist.map(({ l, sets }) => `<button class="row" data-act="openLog" data-id="${l.id}"><div class="grow">
       <div class="title">${fmtDate(l.startedAt)} <span class="muted" style="font-weight:400;margin-left:4px">${esc(l.dayName)}</span>${prLogs.has(l.id) ? '<span class="pr">PR</span>' : ''}</div>
-      <div class="sub">${sets.map(x => `${fmtNum(x.weight)} kg × ${x.reps}`).join(', ')}</div></div>${ICON.chev}</button>`).join('')}</div>`;
+      <div class="sub">${esc(summarize(sets))}</div></div>${ICON.chev}</button>`).join('')}</div>`;
 }
 function logStats(l) {
   let sets = 0, vol = 0;
@@ -1521,7 +1530,7 @@ function exerciseChart(name) {
   }
   if (!pts.length) return '<p class="sub">Für diese Übung gibt es noch keine erledigten Sätze.</p>';
   const vs = pts.map(p => p.v);
-  return lineChart(pts) + `<p class="sub" style="margin:6px 0 0">Aktuell ${fmtNum(vs[vs.length - 1])} kg${SEP}Bestwert ${fmtNum(Math.max(...vs))} kg</p>`;
+  return lineChart(pts) + `<p class="sub" style="margin:6px 0 0">Aktuell ${fmtNum(vs[vs.length - 1])} kg</p>`;
 }
 function lineChart(pts) {
   const W = 320, H = 140, P = 34;
