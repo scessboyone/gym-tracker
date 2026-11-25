@@ -109,7 +109,8 @@ document.addEventListener('touchstart', e => {
   if (e.touches.length !== 1 || sheetOpen || $('#dlg')) return;
   const t = e.touches[0];
   if (t.clientX < 24 || t.clientX > innerWidth - 24) return; // Rand frei lassen für die Zurück-Geste des Handys
-  if (!e.target.closest('#view') || e.target.closest('input, textarea, select, .bwsvg, .chart svg, .no-swipe')) return;
+  // Überall wischen, auch unter kurzem Inhalt (z. B. Plan) – nur nicht auf Leisten, Fenstern und Eingaben
+  if (e.target.closest('#tabs, #sheet, #backdrop, #timer, #toast, #update, .wk-nav, input, textarea, select, .bwsvg, .chart svg, .no-swipe')) return;
   sw = { x0: t.clientX, y0: t.clientY, t0: Date.now(), dir: null, dx: 0 };
 }, { passive: true });
 document.addEventListener('touchmove', e => {

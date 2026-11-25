@@ -49,6 +49,14 @@ const seed = () => {
     await shot('uebungen');
     await page.locator('#view [data-act="openEx"]').first().click(); await st();
     await shot('uebung-detail');
+    // Muskel-Karte im Verlauf und Unterseite „Muskeln“
+    await page.evaluate(() => { selectTab('home'); selectTab('log'); }); await st();
+    await page.locator('.heat-more').scrollIntoViewIfNeeded(); await st(300);
+    await shot('muskel-karte', false);
+    await page.locator('.heat-more').click(); await st();
+    await shot('muskeln');
+    await page.locator('#view [data-act="heatRange"][data-r="w"]').click(); await st(300);
+    await shot('muskeln-woche');
     // Vollbild-Training
     await page.evaluate(() => selectTab('home')); await st();
     await page.locator('#view [data-act="start"]').first().click(); await st(700);

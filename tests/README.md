@@ -10,5 +10,6 @@ Brauchen Node und Playwright (z. B. über den Claude-Skill `playwright-skill`).
 |---|---|
 | `app-test.js` | Klickt alles durch: Plan anlegen, Training, Verlauf, Monatsrückblick, Gewicht, Neu laden (58 Prüfungen) |
 | `month-text-test.js` | Vergleichstexte im Monatsrückblick an Sonderdaten (30.3., 31.5., Monatserster) |
+| `swipe-test.js` | Wischen zwischen allen Bereichen mit echten Touch-Gesten, mitten im Inhalt und im leeren Bereich unten |
 | `offline-test.js` | Service Worker installiert sich, alle App-Dateien liegen im Cache, App startet offline |
 | `screenshots.js` | Screenshots der Trainings-, Monats- und Übungsseiten mit Beispieldaten (Ordner per `PW_ARTIFACT_DIR`) |

@@ -16,7 +16,7 @@ function render() {
   if (V.tab === 'home') view.innerHTML = renderHome();
   else if (V.tab === 'train') view.innerHTML = S.active ? renderWorkout() : renderDays();
   else if (V.tab === 'plan') view.innerHTML = V.sub && findDay(V.sub) ? renderDayEditor(findDay(V.sub)) : renderPlan();
-  else if (V.tab === 'log') view.innerHTML = V.sub === 'weight' ? renderWeight() : V.sub === 'ex' ? renderExList()
+  else if (V.tab === 'log') view.innerHTML = V.sub === 'weight' ? renderWeight() : V.sub === 'ex' ? renderExList() : V.sub === 'muscles' ? renderMuscles()
     : typeof V.sub === 'string' && V.sub.startsWith('ex:') ? renderExHist(V.sub.slice(3))
     : typeof V.sub === 'string' && V.sub.startsWith('month:') ? renderMonth(V.sub.slice(6)) : renderLog();
   else view.innerHTML = renderMore();

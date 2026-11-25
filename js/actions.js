@@ -288,6 +288,7 @@ const actions = {
   sharePlanLink() { sharePlanLink(); },
   pastePlanLink() { pastePlanLink(); },
   heatRange(el) { V.heat = el.dataset.r; render(); },
+  openMuscles() { openSub('muscles'); },
   toggleWd(el) {
     const d = findDay(V.sub), i = +el.dataset.wd;
     if (!d) return;

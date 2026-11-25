@@ -232,12 +232,19 @@ function muscleCounts(from, to = Infinity) {
   return cnt;
 }
 const planMuscles = () => new Set(allExercises().flatMap(o => hasMuscles(o) ? [...o.muscles.p, ...o.muscles.s] : []));
-function renderHeat() {
+// Sätze je Muskel im gewählten Zeitraum (Woche / 4 Wochen) und welche Plan-Muskeln noch fehlen
+function heatData() {
   const range = V.heat || 'w';
   const from = range === 'w' ? weekStart(Date.now()) : dayStart(Date.now()) - 27 * DAY;
-  const planMus = planMuscles();
+  const planMus = planMuscles(), cnt = muscleCounts(from);
+  const top = Object.entries(cnt).filter(([k]) => MUSCLE_DE[k]).sort((x, y) => y[1] - x[1]);
+  const missing = [...planMus].filter(k => !cnt[k] && MUSCLE_DE[k]);
+  return { range, planMus, cnt, top, missing, label: range === 'w' ? 'Diese Woche' : 'Letzte 4 Wochen' };
+}
+const heatSeg = range => `<div class="seg heat-seg"><button class="${range === 'w' ? 'on' : ''}" data-act="heatRange" data-r="w">Woche</button><button class="${range === 'm' ? 'on' : ''}" data-act="heatRange" data-r="m">4 Wochen</button></div>`;
+function renderHeat() {
+  const { range, planMus, cnt, top, label } = heatData();
   if (!planMus.size) return '';
-  const cnt = muscleCounts(from);
   // Stufen pro Woche: 1–5 wenig, 6–11 mittel, ab 12 viel (bei 4 Wochen das Vierfache)
   const f = range === 'w' ? 1 : 4;
   const lvl = v => !v ? 0 : v < 6 * f ? 1 : v < 12 * f ? 2 : 3;
@@ -245,18 +252,32 @@ function renderHeat() {
   if (levels.calves) levels.left_soleus = levels.right_soleus = levels.calves;
   const fig = side => `<svg viewBox="0 0 1000 2200" aria-hidden="true">${Object.entries(BODY[side]).map(([k, list]) =>
     list.map(pts => `<polygon class="${k === 'head' || k === 'knees' ? 'mh' : levels[k] ? 'h' + levels[k] : 'mb'}" points="${pts}"/>`).join('')).join('')}</svg>`;
-  const fmt = v => fmtNum(Math.round(v * 2) / 2);
-  const top = Object.entries(cnt).filter(([k]) => MUSCLE_DE[k]).sort((x, y) => y[1] - x[1]).slice(0, 4);
-  const missing = [...planMus].filter(k => !cnt[k] && MUSCLE_DE[k]).map(k => MUSCLE_DE[k]);
   return `<div class="card">
-    <div class="heat-head"><div><div class="sub">Muskeln</div><b>${range === 'w' ? 'Diese Woche' : 'Letzte 4 Wochen'}</b></div>
-      <div class="seg heat-seg"><button class="${range === 'w' ? 'on' : ''}" data-act="heatRange" data-r="w">Woche</button><button class="${range === 'm' ? 'on' : ''}" data-act="heatRange" data-r="m">4 Wochen</button></div></div>
+    <div class="heat-head"><div><div class="sub">Muskeln</div><b>${label}</b></div>${heatSeg(range)}</div>
     <div class="heat">${fig('front')}${fig('back')}</div>
     <div class="heat-legend"><span><i class="h1"></i>wenig</span><span><i class="h2"></i>mittel</span><span><i class="h3"></i>viel</span><span class="sub">Sätze pro Muskel</span></div>
-    ${top.length ? `<p class="sub" style="margin:10px 0 0">Am meisten: ${top.map(([k, v]) => `${MUSCLE_DE[k]} <b style="color:var(--text)">${fmt(v)}</b>`).join(', ')}</p>`
-      : `<p class="sub" style="margin:10px 0 0">${range === 'w' ? 'Diese Woche' : 'In den letzten 4 Wochen'} noch kein Training.</p>`}
-    ${top.length && missing.length ? `<p class="sub" style="margin:4px 0 0">Noch nicht dran: ${missing.join(', ')}</p>` : ''}
+    ${top.length ? `<button class="heat-more" data-act="openMuscles">Am meisten und noch nicht dran${ICON.chev}</button>`
+      : `<p class="sub" style="margin:12px 0 0;text-align:center">${range === 'w' ? 'Diese Woche' : 'In den letzten 4 Wochen'} noch kein Training.</p>`}
   </div>`;
+}
+// Unterseite: alle Muskeln mit Sätzen und die, die noch nicht dran waren
+function renderMuscles() {
+  setTop('Muskeln', `<button class="linkbtn" data-act="back">${ICON.back}Verlauf</button>`);
+  const { range, top, missing, label } = heatData();
+  const max = top.length ? top[0][1] : 1;
+  const exFor = k => [...new Set(allExercises().filter(o => hasMuscles(o) && o.muscles.p.includes(k)).map(o => o.name))];
+  let h = `<div class="heat-head heat-sub"><b>${label}</b>${heatSeg(range)}</div>`;
+  h += top.length ? `<div class="section-title">Am meisten</div><div class="card m-bars">${top.map(([k, v]) => `<div class="m-bar">
+      <span>${MUSCLE_DE[k]}</span><div class="m-track"><i style="width:${Math.max(4, (v / max) * 100).toFixed(0)}%"></i></div><b>${fmtNum(Math.round(v * 2) / 2)}</b></div>`).join('')}
+      <p class="sub m-note">Sätze pro Muskel, Hilfsmuskel zählt halb.</p></div>`
+    : `<div class="empty"><b>Noch kein Training</b>${range === 'w' ? 'Diese Woche' : 'In den letzten 4 Wochen'} hast du noch nichts eingetragen.</div>`;
+  if (missing.length) h += `<div class="section-title">Noch nicht dran</div><div class="list">${missing.map(k => {
+    const ex = exFor(k);
+    return `<div class="row"><div class="grow"><div class="title">${MUSCLE_DE[k]}</div>
+      <div class="sub">${ex.length ? `z. B. ${esc(ex.slice(0, 2).join(', '))}` : 'nur als Hilfsmuskel im Plan'}</div></div></div>`;
+  }).join('')}</div>`;
+  else if (top.length) h += `<p class="sub" style="margin:16px 4px 0">Alle Muskeln aus deinem Plan waren schon dran.</p>`;
+  return h;
 }
 
 /* Wochenübersicht: Trainings diese Woche, Serie, Kalender der letzten 6 Wochen */
