@@ -5,9 +5,10 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.18.0';
+const APP_VERSION = '0.18.1';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
+  'Training im Vollbild: große Muskel-Grafik, große Zahlen, Weiter/Zurück unten – wischen wechselt die Übung, „Minimieren“ bringt die Tab-Leiste zurück. Läuft ein Training, öffnet die App direkt dort',
   'Training neu: eine Übung pro Seite mit Weiter/Zurück und Fortschrittsbalken – Übung überspringen, wenn die Maschine besetzt ist (kommt am Ende nochmal)',
   'Verlauf → „Verlauf pro Übung“: alle Sätze, Bestwert und Kurve je Übung auf einer eigenen Seite',
   'Der Bildschirm bleibt im Training nicht mehr extra an',
@@ -294,6 +295,7 @@ const POPULAR = new Set(['Barbell_Bench_Press_-_Medium_Grip', 'Barbell_Incline_B
   'Close-Grip_Barbell_Bench_Press', 'Dumbbell_Shoulder_Press', 'One-Arm_Dumbbell_Row', 'Machine_Shoulder_Military_Press']);
 
 /* ---------- Rendern ---------- */
+const inFocus = () => V.tab === 'train' && !!S.active && !V.sub;
 function setTop(title, left = '', right = '') {
   $('#title').textContent = title;
   $('#topleft').innerHTML = left;
@@ -309,6 +311,7 @@ function render() {
   else if (V.tab === 'log') view.innerHTML = V.sub === 'weight' ? renderWeight() : V.sub === 'ex' ? renderExList()
     : typeof V.sub === 'string' && V.sub.startsWith('ex:') ? renderExHist(V.sub.slice(3)) : renderLog();
   else view.innerHTML = renderMore();
+  document.body.classList.toggle('focus', inFocus());
   tickElapsed();
 }
 
@@ -533,9 +536,9 @@ function workoutHead() {
   const { done, total } = workoutCounts();
   const n = A.order.length, en = A.entries[A.order[A.pos]];
   const next = A.pos < n - 1 ? A.entries[A.order[A.pos + 1]].name : '';
-  return `<section class="card glass wk-head" id="wk-head">
-    <div class="wk-title">${esc(A.dayName)}</div>
-    <div class="wk-meta"><span>Dauer <b id="elapsed">${fmtDur(Date.now() - A.startedAt)}</b></span><span>${done} / ${total} Sätze</span></div>
+  return `<section class="wk-head" id="wk-head">
+    <div class="wk-meta"><span class="wk-title">${esc(A.dayName)}</span><span><b id="elapsed">${fmtDur(Date.now() - A.startedAt)}</b></span></div>
+    <div class="wk-meta"><span>${done} / ${total} Sätze</span></div>
     <div class="steps" role="tablist" aria-label="Übungen">${A.order.map((idx, k) => {
       const e = A.entries[idx], d = e.sets.filter(x => x.done).length, pct = e.sets.length ? (d / e.sets.length) * 100 : 0;
       return `<button class="step${k === A.pos ? ' on' : ''}${entryDone(e) ? ' done' : ''}" data-act="exGo" data-k="${k}" role="tab" aria-selected="${k === A.pos}" aria-label="${esc(e.name)}"><i style="width:${pct}%"></i></button>`;
@@ -546,16 +549,16 @@ function workoutHead() {
 function renderWorkout() {
   const A = S.active;
   ensureOrder(A);
-  setTop('Training', '', '<button class="linkbtn" data-act="finish">Beenden</button>');
+  setTop('', `<button class="linkbtn" data-act="minimize" aria-label="Training minimieren">${ICON.down}Minimieren</button>`, '<button class="linkbtn" data-act="finish">Beenden</button>');
   const i = A.order[A.pos], last = A.pos === A.order.length - 1;
   return `${workoutHead()}
     ${renderEntry(A.entries[i], i)}
-    <div class="wk-nav">
+    ${last ? '' : '<button class="btn ghost block" data-act="exSkip">Übung überspringen und später machen</button>'}
+    <button class="btn ghost block" data-act="cancelWorkout">Training verwerfen</button>
+    <div class="wk-nav glass">
       <button class="btn" data-act="exPrev" ${A.pos === 0 ? 'disabled' : ''}>${ICON.back}Zurück</button>
       <button class="btn primary" data-act="exNext">${last ? 'Training beenden' : `Weiter${ICON.chev}`}</button>
-    </div>
-    ${last ? '' : '<button class="btn ghost block" data-act="exSkip">Übung überspringen und später machen</button>'}
-    <button class="btn ghost block" data-act="cancelWorkout">Training verwerfen</button>`;
+    </div>`;
 }
 function goEx(k) {
   const A = S.active; if (!A) return;
@@ -573,19 +576,19 @@ function renderEntry(en, i) {
   const target = pe ? `Ziel: ${sets} × ${repTxt(pe)} Wdh.` : '';
   const levelUp = pe && pe.repMax && lastSets && lastSets.length >= sets && lastSets.every(s => s.reps >= pe.repMax);
   const variants = base && (base.alts || []).length ? [base, ...base.alts] : null;
-  return `<article class="card ex ${allDone ? 'done' : ''}" id="en-${i}">
-    <div class="ex-head" data-act="exInfo" data-i="${i}">
-      ${exThumb(pe || en)}
-      <div class="grow">
-        <div class="ex-name">${esc(en.name)}</div>
-        ${target ? `<div class="sub">${target}</div>` : ''}
-        ${last ? `<div class="sub">Letztes Mal: ${esc(last)}</div>` : ''}
-        ${pe ? `<button class="note ${pe.note ? '' : 'blank'}" data-act="editNote" data-i="${i}" aria-label="Notiz bearbeiten">${ICON.edit}<span>${pe.note ? esc(pe.note) : 'Notiz hinzufügen'}</span></button>` : ''}
-      </div>
-      <div class="ex-tools">
-        ${variants ? `<button class="iconbtn sw" data-act="switchVar" data-i="${i}" aria-label="Übung wechseln" title="Wechseln zu: ${esc(variants.filter(o => o.id !== effId(en)).map(o => o.name).join(', '))}">${ICON.swap}</button>` : ''}
-      </div>
+  return `<article class="card ex ex-focus ${allDone ? 'done' : ''}" id="en-${i}">
+    <button class="ex-fig" data-act="exInfo" data-i="${i}" aria-label="Muskeln und Anleitung zu ${esc(en.name)}">
+      ${exThumb(pe || en, 'musbig')}
+      <span class="ex-fig-hint">Anleitung${ICON.chev}</span>
+    </button>
+    ${muscleLegend(pe || en)}
+    <div class="ex-title">
+      <h2 class="ex-name">${esc(en.name)}</h2>
+      ${variants ? `<button class="iconbtn sw" data-act="switchVar" data-i="${i}" aria-label="Übung wechseln" title="Wechseln zu: ${esc(variants.filter(o => o.id !== effId(en)).map(o => o.name).join(', '))}">${ICON.swap}</button>` : ''}
     </div>
+    ${target ? `<div class="sub">${target}</div>` : ''}
+    ${last ? `<div class="sub">Letztes Mal: ${esc(last)}</div>` : ''}
+    ${pe ? `<button class="note ${pe.note ? '' : 'blank'}" data-act="editNote" data-i="${i}" aria-label="Notiz bearbeiten">${ICON.edit}<span>${pe.note ? esc(pe.note) : 'Notiz hinzufügen'}</span></button>` : ''}
     ${levelUp && !en.bumped ? `<div class="bump">
       <div class="sub" style="color:var(--green);margin-bottom:8px">Ziel letztes Mal geschafft! Um wie viel erhöhen?</div>
       <div class="btnrow">${[1, 2.5, 5].map(v => `<button class="btn small" data-act="bump" data-i="${i}" data-v="${v}">+${fmtNum(v)} kg</button>`).join('')}
@@ -1903,6 +1906,7 @@ const actions = {
     goEx(A.pos + 1);
   },
   exGo(el) { goEx(+el.dataset.k); },
+  minimize() { selectTab('home'); },
   exSkip() {
     const A = S.active; if (!A || A.pos >= A.order.length - 1) return;
     const [idx] = A.order.splice(A.pos, 1);
@@ -2244,7 +2248,15 @@ function tabDragEnd(e, cancel) {
 tabsEl.addEventListener('pointerup', e => tabDragEnd(e, false));
 tabsEl.addEventListener('pointercancel', e => tabDragEnd(e, true));
 
-// Auf der Seite nach links/rechts wischen -> Nachbarbereich (Seite folgt leicht dem Finger)
+// Auf der Seite nach links/rechts wischen -> Nachbarbereich (Seite folgt leicht dem Finger).
+// Im Training-Vollbild: nächste bzw. vorige Übung.
+function swipeTarget(dx) {
+  if (inFocus()) {
+    const k = S.active.pos + (dx < 0 ? 1 : -1);
+    return k >= 0 && k < S.active.order.length ? k : null;
+  }
+  return TAB_ORDER[TAB_ORDER.indexOf(V.tab) + (dx < 0 ? 1 : -1)] || null;
+}
 let sw = null;
 document.addEventListener('touchstart', e => {
   sw = null;
@@ -2260,20 +2272,23 @@ document.addEventListener('touchmove', e => {
   if (!sw.dir && (Math.abs(dx) > 12 || Math.abs(dy) > 12)) sw.dir = Math.abs(dx) > Math.abs(dy) * 1.4 ? 'h' : 'v';
   if (sw.dir !== 'h') return;
   sw.dx = dx;
-  const i = TAB_ORDER.indexOf(V.tab), next = TAB_ORDER[i + (dx < 0 ? 1 : -1)];
+  const next = swipeTarget(dx);
   const v = $('#view');
   v.getAnimations().forEach(x => x.cancel());
-  v.style.transform = `translateX(${dx * (next ? 0.3 : 0.08)}px)`;
-  v.style.opacity = next ? Math.max(0.4, 1 - Math.abs(dx) / 600) : 1;
+  v.style.transform = `translateX(${dx * (next != null ? 0.3 : 0.08)}px)`;
+  v.style.opacity = next != null ? Math.max(0.4, 1 - Math.abs(dx) / 600) : 1;
 }, { passive: true });
 document.addEventListener('touchend', () => {
   const s = sw; sw = null;
   if (!s || s.dir !== 'h') return;
   const v = $('#view'), cur = v.style.transform;
   v.style.transform = ''; v.style.opacity = '';
-  const i = TAB_ORDER.indexOf(V.tab), next = TAB_ORDER[i + (s.dx < 0 ? 1 : -1)];
+  const next = swipeTarget(s.dx);
   const fast = Math.abs(s.dx) / (Date.now() - s.t0) > 0.4;
-  if (next && (Math.abs(s.dx) > 80 || (fast && Math.abs(s.dx) > 35))) { tabHandledAt = Date.now(); selectTab(next); return; }
+  if (next != null && (Math.abs(s.dx) > 80 || (fast && Math.abs(s.dx) > 35))) {
+    if (inFocus()) { goEx(next); return; }
+    tabHandledAt = Date.now(); selectTab(next); return;
+  }
   if (cur && Element.prototype.animate) v.animate([{ transform: cur }, { transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.3, 1.35, .5, 1)' });
 });
 document.addEventListener('touchcancel', () => { if (sw) { sw = null; const v = $('#view'); v.style.transform = ''; v.style.opacity = ''; } });
@@ -2334,6 +2349,7 @@ darkMq.addEventListener('change', applyTheme);
     for (const k of await idb.keys()) if (String(k).startsWith('img:')) localImgs[k.slice(4)] = await idb.get(k);
   } catch (e) { toast('Speicher nicht verfügbar: ' + e.message); }
   applyTheme();
+  if (S.active) V.tab = 'train'; // laufendes Training: direkt wieder im Vollbild
   render();
   if (DRIVE_DIRECT) loadGis().catch(() => {});
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});

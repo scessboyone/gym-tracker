@@ -1,7 +1,7 @@
 // Service Worker: macht die App offline-faehig.
 // Eigene Dateien: erst Netz (max. 3 s), sonst Cache -> Updates kommen automatisch.
 // Uebungsbilder/-datenbank: erst Cache, sonst Netz -> funktioniert im Gym ohne Empfang.
-const VERSION = 'v41';
+const VERSION = 'v42';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];

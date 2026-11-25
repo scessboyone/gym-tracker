@@ -202,7 +202,7 @@ main { padding: 4px 16px calc(var(--safe-b) + 152px); max-width: 640px; margin: 
 .day .btn { width: 100%; }
 
 /* ---------- Training läuft ---------- */
-.wk-head { position: sticky; top: calc(var(--safe-t) + 88px); z-index: 5; }
+.wk-head { margin: 0 0 12px; }
 .wk-meta { display: flex; justify-content: space-between; align-items: baseline; color: var(--sub); font-size: 14px; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .wk-meta b { font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--text); }
 .wk-title { font-family: var(--font-display); font-size: 22px; font-weight: 800; }
@@ -520,3 +520,27 @@ input[type="time"].input::-webkit-calendar-picker-indicator { opacity: .6; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
 .nw { white-space: nowrap; }
+
+/* ---------- Training im Vollbild ---------- */
+body.focus #tabs { display: none; }
+body.focus #topbar { padding-bottom: 4px; }
+body.focus main { padding-bottom: calc(var(--safe-b) + 176px); }
+.wk-head .wk-title { font-size: 20px; color: var(--text); }
+.wk-head .wk-meta b { font-size: 24px; }
+.ex-focus { padding: 16px; }
+.ex-fig { position: relative; display: block; width: 100%; padding: 12px 0; border-radius: 16px; background: var(--field); border: 0; }
+.ex-fig .musbig { height: min(30vh, 260px); gap: 24px; }
+.ex-fig-hint { position: absolute; right: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 2px; padding: 4px 6px 4px 10px; border-radius: 99px; background: var(--card); color: var(--accent); font-size: 13px; font-weight: 600; }
+.ex-fig-hint svg { width: 16px; height: 16px; }
+.ex-fig:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ex-title { display: flex; align-items: flex-start; gap: 12px; margin-top: 14px; }
+.ex-focus .ex-name { flex: 1; min-width: 0; margin: 0; font-family: var(--font-display); font-size: 28px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.12; overflow-wrap: break-word; }
+.ex-title .iconbtn.sw { flex: none; color: var(--accent); background: var(--accent-soft); }
+.ex-focus .sets { margin-top: 16px; }
+.ex-focus .set-row { grid-template-columns: 40px 1fr 1fr 56px; gap: 10px; margin-top: 10px; }
+.ex-focus .set-row.hdr { margin-top: 0; }
+.ex-focus .set-row input { padding: 14px 4px; font-size: 24px; }
+.ex-focus .set-no { font-size: 20px; }
+.ex-focus .check { width: 56px; height: 56px; border-radius: 14px; }
+.ex-focus .check svg { width: 26px; height: 26px; }
+.wk-nav { position: fixed; left: 12px; right: 12px; bottom: calc(var(--safe-b) + 12px); z-index: 20; max-width: 520px; margin: 0 auto; padding: 8px; border-radius: 28px; box-shadow: 0 8px 32px var(--shadow); }
