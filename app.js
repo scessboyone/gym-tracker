@@ -5,10 +5,9 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.17.0';
+const APP_VERSION = '0.17.1';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
-  'Neu: Die App meldet sich, wenn die Pause vorbei ist – auch bei gesperrtem Handy (Mehr → Training)',
   'Der Bildschirm bleibt im Training nicht mehr extra an',
   'Feinschliff: Fenster wie „Neue Übung“ sind nicht mehr durchsichtig, Gewichts-Kopfzeile sauber ausgerichtet, „1 Satz“ statt „1 Sätze“',
   'Gewicht eintragen: Die Uhrzeit wird nicht mehr abgeschnitten, „Eintragen“ steht jetzt breit darunter',
@@ -1384,10 +1383,6 @@ function renderMore() {
     <div class="list">
       <label class="toggle"><span>Standard-Pause für neue Übungen (Sekunden)</span>
         <input class="input" style="width:90px;text-align:center" inputmode="numeric" data-field="defRest" value="${S.settings.rest}"></label>
-      ${canNotify() ? `<label class="toggle"><span>Melden, wenn die Pause vorbei ist${Notification.permission === 'denied'
-        ? '<span class="sub" style="display:block">In den Handy-Einstellungen für diese App blockiert</span>'
-        : '<span class="sub" style="display:block">Auch bei gesperrtem Handy</span>'}</span>
-        <input type="checkbox" data-field="notify" ${notifyOn() ? 'checked' : ''} ${Notification.permission === 'denied' ? 'disabled' : ''}></label>` : ''}
     </div>
     <div class="section-title">Backup</div>
     <div class="list">
@@ -1549,7 +1544,7 @@ async function importData(file) {
     for (const k of Object.keys(localImgs)) delete localImgs[k];
     for (const [k, v] of Object.entries(data.images || {})) { await idb.set(k, v); localImgs[k.slice(4)] = v; }
     S = Object.assign({ settings: { rest: 90 }, logs: [], active: null }, data.state);
-    delete S.settings.wakeLock;
+    delete S.settings.wakeLock; delete S.settings.notify;
     await flush(); render(); toast('Backup geladen');
   } catch (e) { toast('Import fehlgeschlagen: ' + e.message); }
 }
@@ -1572,7 +1567,6 @@ function tickRest() {
     el.innerHTML = '<span class="lbl">Pause vorbei</span><b>Los!</b><button data-act="tStop">OK</button>';
     clearInterval(T.iv); T.iv = null;
     if (navigator.vibrate) navigator.vibrate([300, 120, 300]);
-    if (document.visibilityState !== 'visible') notifyRestEnd();
     setTimeout(() => { if (!T.iv) el.hidden = true; }, 6000);
     return;
   }
@@ -1585,41 +1579,8 @@ function tickRest() {
 }
 function stopRest() { clearInterval(T.iv); T.iv = null; const el = $('#timer'); el.hidden = true; el.dataset.mode = ''; }
 
-/* ---------- Benachrichtigung bei Pausen-Ende ---------- */
-const canNotify = () => 'Notification' in window && 'serviceWorker' in navigator;
-const notifyOn = () => canNotify() && S.settings.notify === true && Notification.permission === 'granted';
-function nextSetTxt() {
-  for (const en of (S.active ? S.active.entries : [])) {
-    const j = en.sets.findIndex(x => !x.done);
-    if (j >= 0) return `Weiter mit ${en.name}, Satz ${j + 1}`;
-  }
-  return 'Alle Sätze erledigt – Training beenden?';
-}
-function notifyRestEnd() {
-  if (!notifyOn()) return;
-  navigator.serviceWorker.ready.then(r => r.showNotification('Pause vorbei', {
-    body: nextSetTxt(), tag: 'rest', renotify: true, icon: 'icons/icon-192.png',
-    vibrate: [300, 120, 300], data: { url: './' },
-  })).catch(() => {});
-}
-function clearRestNote() {
-  if (!canNotify() || Notification.permission !== 'granted') return;
-  navigator.serviceWorker.ready.then(r => r.getNotifications({ tag: 'rest' }))
-    .then(ns => ns.forEach(n => n.close())).catch(() => {});
-}
-// Beim ersten abgehakten Satz einmal fragen (nur wenn noch nie entschieden)
-async function maybeAskNotify() {
-  if (!canNotify() || S.settings.notify !== undefined) return;
-  if (Notification.permission !== 'default') { S.settings.notify = Notification.permission === 'granted'; save(); return; }
-  const yes = await dialog({ title: 'Pausen-Ende melden?',
-    text: 'Wenn das Handy gesperrt ist oder du in einer anderen App bist, meldet sich die App, sobald die Pause vorbei ist. Ändern kannst du das unter Mehr → Training.',
-    ok: 'Ja, melden', cancel: 'Nein' });
-  S.settings.notify = yes ? (await Notification.requestPermission()) === 'granted' : false;
-  save();
-  if (yes && !S.settings.notify) toast('Benachrichtigungen sind für die App blockiert');
-}
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') { clearRestNote(); if (T.iv) tickRest(); }
+  if (document.visibilityState === 'visible') { if (T.iv) tickRest(); }
   else flush();
 });
 
@@ -1751,7 +1712,6 @@ const actions = {
     if (!s.done) return;
     if (navigator.vibrate) navigator.vibrate(15);
     startRest(en.rest);
-    if (en.rest) maybeAskNotify();
     // Rekord schon während des Trainings melden (einmal pro Übung)
     if (!en.prShown && isPR(s, bestSet(effId(en), en.name))) {
       en.prShown = true; save();
@@ -2178,14 +2138,7 @@ document.addEventListener('change', e => {
   const f = e.target.dataset && e.target.dataset.field;
   if (f === 'chartName') { chartName = e.target.value; render(); }
   else if (f === 'importFile' && e.target.files[0]) { importData(e.target.files[0]); e.target.value = ''; }
-  else if (f === 'notify') setNotify(e.target);
 });
-async function setNotify(box) {
-  if (!box.checked) { S.settings.notify = false; save(); return; }
-  const p = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
-  S.settings.notify = p === 'granted'; save();
-  if (p !== 'granted') { toast('Benachrichtigungen sind für die App blockiert'); render(); }
-}
 document.addEventListener('focusin', e => { if (e.target.matches('.set-row input')) setTimeout(() => e.target.select(), 0); });
 
 /* ---------- Hell / Dunkel ---------- */

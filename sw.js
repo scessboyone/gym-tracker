@@ -1,7 +1,7 @@
 // Service Worker: macht die App offline-faehig.
 // Eigene Dateien: erst Netz (max. 3 s), sonst Cache -> Updates kommen automatisch.
 // Uebungsbilder/-datenbank: erst Cache, sonst Netz -> funktioniert im Gym ohne Empfang.
-const VERSION = 'v39';
+const VERSION = 'v40';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
@@ -66,11 +66,3 @@ self.addEventListener('fetch', e => {
   }
 });
 
-// Antippen der Benachrichtigung "Pause vorbei": App wieder nach vorne holen
-self.addEventListener('notificationclick', e => {
-  e.notification.close();
-  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
-    const c = cs.find(x => 'focus' in x);
-    return c ? c.focus() : self.clients.openWindow('./');
-  }));
-});

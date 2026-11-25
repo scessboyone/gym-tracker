@@ -9,7 +9,6 @@ Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gy
 - Alternativen pro Übung (⇄-Knopf), Notizen/Einstellungen pro Übung (✎ antippen)
 - Muskelmodell statt Fotos (Haupt-/Hilfsmuskeln)
 - Plan-Editor mit Live-Suche in der Übungsdatenbank, „Eigene Übung“ immer möglich
-- Benachrichtigung, wenn die Pause vorbei ist (auch bei gesperrtem Handy; Mehr → Training)
 - Kalender: Trainings verschieben, tauschen, ausfallen lassen, Extra-Training, krank melden; Wochenziel + Serie
 - Gewichtsverlauf: Diagramm (Zeitraum, 7-Tage-Schnitt, Ziel), Statistik, Uhrzeit wird automatisch eingetragen (änderbar)
 - Design im Apple-Stil mit Hell-, Dunkel- und Automatik-Modus (Mehr → Darstellung), blauer Akzent, Wochenring auf Home
