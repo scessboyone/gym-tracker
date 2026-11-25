@@ -23,7 +23,7 @@ fs.mkdirSync(OUT, { recursive: true });
     // Willkommens-Karte beim ersten Start
     const card = page.locator('.card.setup');
     t(await card.isVisible(), `[${scheme}] Willkommens-Karte beim ersten Start`);
-    t(await card.locator('#name-in').count() === 1 && await card.locator('.seg button').count() === 3 && await card.locator('.acc').count() === 7,
+    t(await card.locator('#name-in').count() === 1 && await card.locator('[data-act="setTheme"]').count() === 3 && await card.locator('.acc').count() === 7,
       `[${scheme}] Karte hat Name, Hell/Dunkel und 7 Akzentfarben`);
     await page.screenshot({ path: path.join(OUT, `${scheme}-willkommen.png`) });
     await page.locator('#name-in').fill('Test');
