@@ -13,6 +13,7 @@
   --card: #ffffff;
   --card-solid: #ffffff;
   --card-2: #f7f7fa;
+  --seg-on: #ffffff;
   --glass: rgb(249 249 251 / 0.82);
   --sheet: #f2f2f7;
   --field: rgb(118 118 128 / 0.12);
@@ -64,7 +65,7 @@
 /* ---------- Tokens: dunkel (System oder Einstellung) ---------- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #000000; --card: #1c1c1e; --card-solid: #1c1c1e; --card-2: #232326;
+    --bg: #000000; --card: #1c1c1e; --card-solid: #1c1c1e; --card-2: #232326; --seg-on: #636366;
     --glass: rgb(28 28 30 / 0.72); --sheet: #1c1c1e;
     --field: rgb(118 118 128 / 0.24); --field-2: rgb(118 118 128 / 0.34); --line: rgb(255 255 255 / 0.1);
     --text: #f5f5f7; --sub: #98989f;
@@ -80,7 +81,7 @@
   }
 }
 :root[data-theme="dark"] {
-  --bg: #000000; --card: #1c1c1e; --card-solid: #1c1c1e; --card-2: #232326;
+  --bg: #000000; --card: #1c1c1e; --card-solid: #1c1c1e; --card-2: #232326; --seg-on: #636366;
   --glass: rgb(28 28 30 / 0.72); --sheet: #1c1c1e;
   --field: rgb(118 118 128 / 0.24); --field-2: rgb(118 118 128 / 0.34); --line: rgb(255 255 255 / 0.1);
   --text: #f5f5f7; --sub: #98989f;
@@ -261,7 +262,7 @@ main { padding: 4px 16px calc(var(--safe-b) + 152px); max-width: 640px; margin: 
 .mchip.ms { background: var(--red-soft); color: var(--mus-sec-ink); }
 .seg { display: flex; gap: 4px; padding: 4px; margin-top: 12px; background: var(--field); border-radius: 12px; }
 .seg button { flex: 1; padding: 8px 4px; border-radius: 9px; font-size: 13px; font-weight: 700; color: var(--sub); line-height: 1.2; }
-.seg button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 4px var(--shadow); }
+.seg button.on { background: var(--seg-on); color: var(--text); box-shadow: 0 1px 4px var(--shadow); }
 .ex-actions { display: flex; gap: 8px; margin-top: 12px; }
 
 /* ---------- Listen ---------- */

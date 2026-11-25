@@ -131,7 +131,7 @@ function renderMonth(k) {
       <div class="sub">${kgTxt(r.weight)} × ${r.reps} Wdh.${SEP}${fmtDate(r.t)}</div></div><span class="pr">PR</span></div>`).join('')}</div>` : '';
 
   // Muskeln
-  const mc = Object.entries(muscleCounts(M.a, M.b)).filter(([m]) => MUSCLE_DE[m]).sort((x, y) => y[1] - x[1]);
+  const mc = Object.entries(muscleCounts(M.a, M.b)).filter(([m, v]) => MUSCLE_DE[m] && v > 0).sort((x, y) => y[1] - x[1]);
   const mMax = mc.length ? mc[0][1] : 1;
   const mus = mc.length ? `<div class="section-title">Muskeln${infoBtn('sets')}</div><div class="card m-bars">${mc.slice(0, 6).map(([m, v]) => `<div class="m-bar">
       <span>${MUSCLE_DE[m]}</span><div class="m-track"><i style="width:${Math.max(4, (v / mMax) * 100).toFixed(0)}%"></i></div><b>${fmtNum(Math.round(v * 2) / 2)}</b></div>`).join('')}</div>` : '';
@@ -224,6 +224,7 @@ function muscleCounts(from, to = Infinity) {
     for (const e of l.entries) {
       const m = musclesForEntry(e); if (!m) continue;
       const n = e.sets.filter(s => s.done).length;
+      if (!n) continue; // Übung ohne erledigten Satz zählt nicht
       for (const k of m.p) cnt[k] = (cnt[k] || 0) + n;
       for (const k of m.s) cnt[k] = (cnt[k] || 0) + n / 2;
     }
@@ -236,7 +237,7 @@ function heatData() {
   const range = V.heat || 'w';
   const from = range === 'w' ? weekStart(Date.now()) : dayStart(Date.now()) - 27 * DAY;
   const planMus = planMuscles(), cnt = muscleCounts(from);
-  const top = Object.entries(cnt).filter(([k]) => MUSCLE_DE[k]).sort((x, y) => y[1] - x[1]);
+  const top = Object.entries(cnt).filter(([k, v]) => MUSCLE_DE[k] && v > 0).sort((x, y) => y[1] - x[1]);
   const missing = [...planMus].filter(k => !cnt[k] && MUSCLE_DE[k]);
   return { range, planMus, cnt, top, missing, label: range === 'w' ? 'Diese Woche' : 'Letzte 4 Wochen' };
 }

@@ -12,5 +12,6 @@ Brauchen Node und Playwright (z. B. über den Claude-Skill `playwright-skill`).
 | `month-text-test.js` | Vergleichstexte im Monatsrückblick an Sonderdaten (30.3., 31.5., Monatserster) |
 | `swipe-test.js` | Wischen zwischen allen Bereichen mit echten Touch-Gesten, mitten im Inhalt und im leeren Bereich unten |
 | `info-test.js` | Jeder i-Knopf öffnet seine Erklärung und schließt sauber, hell und dunkel |
+| `muscles-test.js` | Muskel-Statistik: Übungen ohne erledigten Satz zählen nicht, „Am meisten“ nur über 0 |
 | `offline-test.js` | Service Worker installiert sich, alle App-Dateien liegen im Cache, App startet offline |
 | `screenshots.js` | Screenshots der Trainings-, Monats- und Übungsseiten mit Beispieldaten (Ordner per `PW_ARTIFACT_DIR`) |

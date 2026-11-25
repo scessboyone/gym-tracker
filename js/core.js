@@ -7,10 +7,14 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.21.0';
+const APP_VERSION = '0.21.1';
 // Änderungen je Version (neueste zuerst). Nach einem Update zeigt die App nur, was seit der zuletzt gesehenen Version neu ist.
 // Neue Version: oben einen Eintrag { v: APP_VERSION, items: [...] } ergänzen.
 const CHANGELOG = [
+  { v: '0.21.1', items: [
+    'Muskel-Statistik: „Am meisten“ zeigt nur noch Muskeln, die wirklich trainiert wurden, der Rest steht unter „Noch nicht dran“',
+    'Umschalter (z. B. Woche / 4 Wochen) im Dunkelmodus besser lesbar',
+  ] },
   { v: '0.21.0', items: [
     'Erklärungen stecken jetzt hinter einem kleinen i-Knopf im jeweiligen Bereich, die Seiten sind dadurch aufgeräumter',
   ] },
