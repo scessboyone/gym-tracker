@@ -5,11 +5,11 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.20.0';
+const APP_VERSION = '0.20.1';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
   'Training: Übungsname steht oben, die Grafik ist etwas kleiner – alle Sätze passen ohne Scrollen auf den Bildschirm',
-  'Monatsrückblick und Übungsverlauf aufgeräumt: Vergleich einmal oben, Sätze kürzer („67,5 kg: 10, 9, 8 Wdh.“)',
+  'Monatsrückblick und Übungsverlauf aufgeräumt: Vergleich einmal oben, Sätze kürzer („67,5 kg mit 10, 9, 8 Wdh.“)',
   'Monatsrückblick: zeigt jetzt, wie viele geplante Trainings du geschafft hast; „Zurück“ führt wieder dorthin, wo du hergekommen bist',
   'Neu: Monatsrückblick unter Verlauf – Trainings, Zeit, kg, Rekorde, Fortschritte und Muskeln pro Monat, mit Vergleich zum Vormonat',
   'Training im Vollbild: große Muskel-Grafik, große Zahlen, Weiter/Zurück unten – wischen wechselt die Übung, „Minimieren“ bringt die Tab-Leiste zurück. Läuft ein Training, öffnet die App direkt dort',
@@ -528,11 +528,11 @@ function lastSetsOf(exId, name) {
 function summarize(sets) {
   if (!sets || !sets.length) return '';
   const same = sets.every(s => s.weight === sets[0].weight && s.reps === sets[0].reps);
-  if (same) return `${sets.length} × ${sets[0].reps} Wdh. mit ${kgTxt(sets[0].weight)}`;
-  // Gleiche Gewichte zusammenfassen: „67,5 kg: 10, 9, 8 Wdh.“
+  if (same) return `${kgTxt(sets[0].weight)} mit ${sets.length} × ${sets[0].reps} Wdh.`;
+  // Gleiche Gewichte zusammenfassen: „67,5 kg mit 10, 9, 8 Wdh.“
   const g = [];
   for (const x of sets) { const l = g[g.length - 1]; if (l && l.w === x.weight) l.r.push(x.reps); else g.push({ w: x.weight, r: [x.reps] }); }
-  return g.map(x => `${kgTxt(x.w)}: ${x.r.join(', ')}`).join('; ') + ' Wdh.';
+  return g.map(x => `${kgTxt(x.w)} mit ${x.r.join(', ')} Wdh.`).join('; ');
 }
 function workoutCounts() {
   let done = 0, total = 0;
@@ -1008,7 +1008,8 @@ function renderMonth(k) {
   const dNow = new Date().getDate(), running = k === cur;
   const M = monthStats(k), P = monthStats(monthKey(monthStart(k, -1)), running ? dNow : 31);
   M.b = monthStart(k, 1);
-  const prevName = running ? `1. bis ${dNow}. ${monthOnly(monthKey(monthStart(k, -1)))}` : monthOnly(monthKey(monthStart(k, -1)));
+  const pk = monthKey(monthStart(k, -1)), pDays = new Date(monthStart(k) - DAY / 2).getDate(), pEnd = Math.min(dNow, pDays);
+  const prevName = !running || pEnd === pDays ? monthOnly(pk) : pEnd === 1 ? `dem 1. ${monthOnly(pk)}` : `1. bis ${pEnd}. ${monthOnly(pk)}`;
   const nav = `<div class="card m-nav">
     <button class="iconbtn" data-act="monthGo" data-k="${monthKey(monthStart(k, -1))}" ${k <= first ? 'disabled' : ''} aria-label="Voriger Monat">${ICON.back}</button>
     <h2>${monthLabel(k)}</h2>
@@ -1020,14 +1021,15 @@ function renderMonth(k) {
   const { planned, hit } = monthPlanned(M.a, M.b, days);
   const dDur = M.dur - P.dur;
   const cmpBox = (up, txt) => P.logs.length ? `<div class="m-cmp ${up ? 'up' : ''}">${txt}</div>` : '';
-  const cmp = (now, before) => cmpBox(now > before, diffTxt(now - before));
-  const inT = M.vol >= 10000 || P.vol >= 10000, dVol = M.vol - P.vol;
-  const volDiff = (dVol >= 0 ? '+' : '−') + (inT ? `${fmtNum(Math.round(Math.abs(dVol) / 100) / 10)} t` : `${fmtNum(Math.round(Math.abs(dVol)))} kg`);
+  const cmp = (now, before, one, many) => cmpBox(now > before, `${diffTxt(now - before)} ${Math.abs(now - before) === 1 ? one : many}`);
+  const inT = M.vol >= 10000 || P.vol >= 10000;
+  const dVol = inT ? Math.round((M.vol - P.vol) / 100) / 10 : Math.round(M.vol - P.vol);
+  const volDiff = diffTxt(dVol, inT ? ' t' : ' kg');
   const stats = `<div class="card m-stats">
     ${P.logs.length ? `<div class="m-vs sub">Vergleich mit ${prevName}</div>` : ''}
-    <div><div class="big">${M.logs.length}</div><div class="sub">${M.logs.length === 1 ? 'Training' : 'Trainings'}${planned ? `, ${hit} von ${planned} geplanten geschafft` : ''}</div>${cmp(M.logs.length, P.logs.length)}</div>
+    <div><div class="big">${M.logs.length}</div><div class="sub">${M.logs.length === 1 ? 'Training' : 'Trainings'}${planned ? `, ${hit} von ${planned} geplanten geschafft` : ''}</div>${cmp(M.logs.length, P.logs.length, 'Training', 'Trainings')}</div>
     <div><div class="big">${minTxt(M.dur).replace(' min', '<small> min</small>').replace(' h', '<small> h</small>')}</div><div class="sub">Trainingszeit</div>${cmpBox(dDur >= 6e4, Math.abs(dDur) < 6e4 ? '±0 min' : (dDur > 0 ? '+' : '−') + minTxt(Math.abs(dDur)))}</div>
-    <div><div class="big">${M.sets}</div><div class="sub">${M.sets === 1 ? 'Satz' : 'Sätze'}</div>${cmp(M.sets, P.sets)}</div>
+    <div><div class="big">${M.sets}</div><div class="sub">${M.sets === 1 ? 'Satz' : 'Sätze'}</div>${cmp(M.sets, P.sets, 'Satz', 'Sätze')}</div>
     <div><div class="big">${(inT ? `${fmtNum(Math.round(M.vol / 100) / 10)} t` : `${fmtNum(Math.round(M.vol))} kg`).replace(/ (kg|t)$/, '<small> $1</small>')}</div><div class="sub">bewegt</div>${cmpBox(dVol > 0, volDiff)}</div>
   </div>`;
 
