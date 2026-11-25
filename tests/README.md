@@ -22,6 +22,7 @@ WebKit einmalig installieren: im Skill-Ordner `npx playwright install webkit`.
 | `accent-test.js` | Erster Start (Willkommens-Karte), Akzentfarbe wählen und behalten, heutiger Tag in der Akzentfarbe |
 | `features-test.js` | Pause beim ersten Start, Wochenziel in der Feier, Jahresrückblick (gefälschtes Datum), Training bearbeiten, Erweiterte Informationen |
 | `security-test.js` | Präparierte Backup-Datei führt nichts aus; normale Daten bleiben beim Bereinigen unverändert |
+| `csp-test.js` | Content-Security-Policy: keine Verstöße bei normaler Nutzung, eingeschleuster Code blockiert, Google-Anmeldeskript und Übungsdatenbank laden |
 | `offline-test.js` | Service Worker installiert sich, alle App-Dateien liegen im Cache, App startet offline |
 | `run-all.js` | Startet den Server und alle Tests in Chrome und WebKit, mit Zusammenfassung |
 | `screenshots.js` | Screenshots der Trainings-, Monats- und Übungsseiten mit Beispieldaten (Ordner per `PW_ARTIFACT_DIR`) |

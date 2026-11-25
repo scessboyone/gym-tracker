@@ -7,10 +7,13 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.25.3';
+const APP_VERSION = '0.26.0';
 // Änderungen je Version (neueste zuerst). Nach einem Update zeigt die App nur, was seit der zuletzt gesehenen Version neu ist.
 // Neue Version: oben einen Eintrag { v: APP_VERSION, items: [...] } ergänzen.
 const CHANGELOG = [
+  { v: '0.26.0', items: [
+    'Sicherheit: zusätzliche Schutzregel (Content-Security-Policy) – fremder Code kann in der App nicht ausgeführt werden',
+  ] },
   { v: '0.25.2', items: [
     'Sicherheit: Backup-Dateien werden beim Laden vollständig geprüft, damit fremde Dateien nichts Schädliches einschleusen können',
   ] },

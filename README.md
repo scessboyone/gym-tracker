@@ -30,12 +30,14 @@ Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gy
 - Reines HTML/CSS/JS ohne Build-Schritt, gehostet über GitHub Pages
 - Daten nur auf dem Gerät (IndexedDB). Backup: Tab „Mehr“ → „In Drive sichern“ bzw. als Datei
 - Offline-fähig über Service Worker (`sw.js`)
+- Content-Security-Policy im `<head>` von `index.html`: Skripte nur von der App und von Googles Anmeldung (`accounts.google.com/gsi/`); keine Inline-Skripte (Hell/Dunkel vor dem Zeichnen: `js/boot.js`). Neue externe Quellen dort eintragen
 - Bei jeder Änderung `VERSION` in `sw.js` und `APP_VERSION` in `js/core.js` hochzählen
 - Beim Laden (Start, Backup, Plan-Link/-Datei) prüft `cleanState`/`cleanPlan` in `js/more.js` alle Daten; neue Datenfelder dort ergänzen
 - Code in `js/`, als normale Skripte nacheinander geladen (Reihenfolge in `index.html`), alle teilen sich den globalen Bereich:
 
 | Datei | Inhalt |
 |---|---|
+| `boot.js` | Läuft im `<head>`: Hell/Dunkel, Akzentfarbe, Statusleiste vor dem ersten Zeichnen |
 | `core.js` | Version, Änderungen, Hilfsfunktionen, Speicher (IndexedDB), App-Zustand |
 | `muscles.js` | Muskel-Grafik, Übungsdatenbank |
 | `home.js` | Rendern, Trainingsauswahl, Home, Kalender-Planung |

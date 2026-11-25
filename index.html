@@ -7,17 +7,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="color-scheme" content="light dark">
   <meta name="description" content="Trainingsplan zum Abhaken: Sätze, Gewichte, Pausen-Timer, Verlauf und Körpergewicht – offline auf dem Handy.">
-  <script>try { var t = localStorage.getItem('gym-theme'); if (t) document.documentElement.dataset.theme = t;
-    var a = localStorage.getItem('gym-accent'); if (a) document.documentElement.dataset.accent = a; } catch (e) {}
-    (function () { var d = document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
-      document.querySelector('meta[name="theme-color"]').content = d ? '#000000' : '#f2f2f7';
-      // iPhone: im Dunkelmodus läuft die App bis unter die Uhrzeit (weiße Schrift), hell bleibt die normale Leiste
-      document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content = d ? 'black-translucent' : 'default'; })();</script>
+  <!-- Schutz: Skripte nur von der App selbst und von Googles Anmeldung (Drive); eingeschleuster Code läuft nicht -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://accounts.google.com/gsi/; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/; img-src 'self' data: blob: https: http:; connect-src 'self' https://raw.githubusercontent.com https://www.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; font-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <script src="js/boot.js"></script>
   <title>Gym</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <!-- iPhone: als Home-Bildschirm-App; Statusleiste siehe Skript oben -->
+  <!-- iPhone: als Home-Bildschirm-App; Statusleiste siehe js/boot.js -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <!-- iPhone: Startbild beim Öffnen (statt weißer Fläche), erzeugt mit tools/make-splash.js -->
