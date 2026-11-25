@@ -5,7 +5,7 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.19.1';
+const APP_VERSION = '0.19.2';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
   'Monatsrückblick: zeigt jetzt, wie viele geplante Trainings du geschafft hast; „Zurück“ führt wieder dorthin, wo du hergekommen bist',
@@ -1017,9 +1017,9 @@ function renderMonth(k) {
   const dDur = M.dur - P.dur;
   const cmp = (now, before, f = v => v) => P.logs.length ? `<div class="m-cmp ${now > before ? 'up' : ''}">${diffTxt(f(now) - f(before))} zum ${prevName}</div>` : '';
   const stats = `<div class="card m-stats">
-    <div><div class="big">${M.logs.length}</div><div class="sub">Trainings${planned ? `, ${hit} von ${planned} geplanten geschafft` : ''}</div>${cmp(M.logs.length, P.logs.length)}</div>
+    <div><div class="big">${M.logs.length}</div><div class="sub">${M.logs.length === 1 ? 'Training' : 'Trainings'}${planned ? `, ${hit} von ${planned} geplanten geschafft` : ''}</div>${cmp(M.logs.length, P.logs.length)}</div>
     <div><div class="big">${minTxt(M.dur).replace(' min', '<small> min</small>').replace(' h', '<small> h</small>')}</div><div class="sub">Trainingszeit</div>${P.logs.length ? `<div class="m-cmp ${dDur >= 6e4 ? 'up' : ''}">${Math.abs(dDur) < 6e4 ? '±0 min' : (dDur > 0 ? '+' : '−') + minTxt(Math.abs(dDur))} zum ${prevName}</div>` : ''}</div>
-    <div><div class="big">${M.sets}</div><div class="sub">Sätze</div>${cmp(M.sets, P.sets)}</div>
+    <div><div class="big">${M.sets}</div><div class="sub">${M.sets === 1 ? 'Satz' : 'Sätze'}</div>${cmp(M.sets, P.sets)}</div>
     <div><div class="big">${kgShort(M.vol).replace(/ (kg|t)$/, '<small> $1</small>')}</div><div class="sub">bewegt</div>${P.logs.length ? `<div class="m-cmp ${M.vol > P.vol ? 'up' : ''}">${M.vol >= P.vol ? '+' : '−'}${kgShort(Math.abs(M.vol - P.vol))} zum ${prevName}</div>` : ''}</div>
   </div>`;
 
