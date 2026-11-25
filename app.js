@@ -5,9 +5,10 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.18.1';
+const APP_VERSION = '0.19.0';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
+  'Neu: Monatsrückblick unter Verlauf – Trainings, Zeit, kg, Rekorde, Fortschritte und Muskeln pro Monat, mit Vergleich zum Vormonat',
   'Training im Vollbild: große Muskel-Grafik, große Zahlen, Weiter/Zurück unten – wischen wechselt die Übung, „Minimieren“ bringt die Tab-Leiste zurück. Läuft ein Training, öffnet die App direkt dort',
   'Training neu: eine Übung pro Seite mit Weiter/Zurück und Fortschrittsbalken – Übung überspringen, wenn die Maschine besetzt ist (kommt am Ende nochmal)',
   'Verlauf → „Verlauf pro Übung“: alle Sätze, Bestwert und Kurve je Übung auf einer eigenen Seite',
@@ -309,7 +310,8 @@ function render() {
   else if (V.tab === 'train') view.innerHTML = S.active ? renderWorkout() : renderDays();
   else if (V.tab === 'plan') view.innerHTML = V.sub && findDay(V.sub) ? renderDayEditor(findDay(V.sub)) : renderPlan();
   else if (V.tab === 'log') view.innerHTML = V.sub === 'weight' ? renderWeight() : V.sub === 'ex' ? renderExList()
-    : typeof V.sub === 'string' && V.sub.startsWith('ex:') ? renderExHist(V.sub.slice(3)) : renderLog();
+    : typeof V.sub === 'string' && V.sub.startsWith('ex:') ? renderExHist(V.sub.slice(3))
+    : typeof V.sub === 'string' && V.sub.startsWith('month:') ? renderMonth(V.sub.slice(6)) : renderLog();
   else view.innerHTML = renderMore();
   document.body.classList.toggle('focus', inFocus());
   tickElapsed();
@@ -452,6 +454,12 @@ function renderHome() {
       ${prWeek ? `<div class="sub">${prWeek} ${prWeek === 1 ? 'neuer Rekord' : 'neue Rekorde'} diese Woche</div>` : ''}
       ${missing.length ? `<div class="sub">Noch nicht dran: ${missing.slice(0, 5).join(', ')}${missing.length > 5 ? ' …' : ''}</div>` : ''}
     </button>`;
+  // Erste Woche im Monat: Rückblick auf den Vormonat
+  if (new Date().getDate() <= 7) {
+    const pk = monthKey(monthStart(monthKey(Date.now()), -1)), pm = monthStats(pk);
+    if (pm.logs.length) h += `<div class="list"><button class="row" data-act="openMonth" data-k="${pk}"><div class="grow"><div class="title">Dein ${monthOnly(pk)} im Rückblick</div>
+      <div class="sub">${pl(pm.logs.length, 'Training', 'Trainings')}${pm.prs.length ? `${SEP}${pl(pm.prs.length, 'Rekord', 'Rekorde')}` : ''}${SEP}${kgShort(pm.vol)} bewegt</div></div>${ICON.chev}</button></div>`;
+  }
   // Körpergewicht (mit Schnell-Eintrag)
   const b = bodySorted(), lastB = b[b.length - 1];
   const bwToday = lastB && dayStart(lastB.t) === tdy;
@@ -934,7 +942,10 @@ function renderLog() {
   setTop('Verlauf');
   let h = renderWeek() + renderHeat() + renderBody();
   if (!S.logs.length) return h + '<div class="empty"><b>Noch keine Trainings</b>Sobald du ein Training beendest, erscheint es hier.</div>';
-  h += `<div class="list"><button class="row" data-act="openExList"><div class="grow"><div class="title">Verlauf pro Übung</div>
+  const mk = monthKey(Date.now()), mc = monthStats(mk).logs.length;
+  h += `<div class="list"><button class="row" data-act="openMonth" data-k="${mk}"><div class="grow"><div class="title">Monatsrückblick</div>
+    <div class="sub">${MONTHS[new Date().getMonth()]}: ${pl(mc, 'Training', 'Trainings')}${SEP}Rekorde, Fortschritte, Muskeln</div></div>${ICON.chev}</button>
+    <button class="row" data-act="openExList"><div class="grow"><div class="title">Verlauf pro Übung</div>
     <div class="sub">Alle Sätze, Bestwert und Kurve für jede Übung</div></div>${ICON.chev}</button></div>`;
   h += renderRecords();
   h += '<div class="section-title">Letzte Trainings</div><div class="list">';
@@ -948,6 +959,124 @@ function renderLog() {
   }
   return h + moreRow('allLogs', S.logs.length) + '</div>';
 }
+/* ----- Monatsrückblick ----- */
+const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+const monthKey = t => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+const monthParts = k => k.split('-').map(Number);
+const monthStart = (k, n = 0) => { const [y, m] = monthParts(k); return new Date(y, m - 1 + n, 1).getTime(); };
+const monthLabel = k => { const [y, m] = monthParts(k); return `${MONTHS[m - 1]} ${y}`; };
+const monthOnly = k => MONTHS[monthParts(k)[1] - 1];
+function monthStats(k, upTo = 31) { // upTo: nur bis zu diesem Tag im Monat zählen
+  const a = monthStart(k), b = Math.min(monthStart(k, 1), addDays(a, upTo));
+  const logs = S.logs.filter(l => l.startedAt >= a && l.startedAt < b);
+  let sets = 0, vol = 0, dur = 0;
+  for (const l of logs) { const x = logStats(l); sets += x.sets; vol += x.vol; dur += l.endedAt - l.startedAt; }
+  // Rekorde: je Übung nur der neueste (logs sind neueste zuerst)
+  const seen = new Set(), prs = logs.flatMap(l => (l.prs || []).map(p => ({ ...p, t: l.startedAt }))).filter(r => !seen.has(r.name) && seen.add(r.name));
+  return { a, b, logs, sets, vol, dur, prs };
+}
+// Geplante Trainings im Monat (bis heute, ohne Extra- und Krank-Tage)
+function monthPlanned(a, b) {
+  if (!hasSchedule()) return 0;
+  const sick = new Set(S.sick || []), since = dayStart(S.settings.since || Date.now());
+  const end = Math.min(b, dayStart(Date.now()) + DAY);
+  let n = 0;
+  for (let t = a; t < end; t = addDays(t, 1)) { const q = planOn(t); if (q.d && !q.x && t >= since && !sick.has(t)) n++; }
+  return n;
+}
+// Schwerster Satz je Übung in einem Zeitraum
+function heaviest(logs) {
+  const m = new Map();
+  for (const l of logs) for (const e of l.entries) for (const x of e.sets) if (x.done && x.weight > 0) m.set(e.name, Math.max(m.get(e.name) || 0, x.weight));
+  return m;
+}
+const kgShort = v => v >= 10000 ? `${fmtNum(Math.round(v / 100) / 10)} t` : `${fmtNum(Math.round(v))} kg`;
+const diffTxt = (d, unit = '') => d > 0 ? `+${fmtNum(d)}${unit}` : d < 0 ? `−${fmtNum(-d)}${unit}` : `±0${unit}`;
+function renderMonth(k) {
+  setTop('Monatsrückblick', `<button class="linkbtn" data-act="back">${ICON.back}Verlauf</button>`);
+  const cur = monthKey(Date.now());
+  const first = monthKey(Math.min(Date.now(), S.settings.since || Date.now(), ...S.logs.map(l => l.startedAt)));
+  // Laufender Monat: mit demselben Zeitraum im Vormonat vergleichen (1. bis heute)
+  const dNow = new Date().getDate(), running = k === cur;
+  const M = monthStats(k), P = monthStats(monthKey(monthStart(k, -1)), running ? dNow : 31);
+  M.b = monthStart(k, 1);
+  const prevName = running ? `1.–${dNow}.${monthParts(monthKey(monthStart(k, -1)))[1]}.` : monthOnly(monthKey(monthStart(k, -1)));
+  const nav = `<div class="card m-nav">
+    <button class="iconbtn" data-act="monthGo" data-k="${monthKey(monthStart(k, -1))}" ${k <= first ? 'disabled' : ''} aria-label="Voriger Monat">${ICON.back}</button>
+    <h2>${monthLabel(k)}</h2>
+    <button class="iconbtn" data-act="monthGo" data-k="${monthKey(monthStart(k, 1))}" ${k >= cur ? 'disabled' : ''} aria-label="Nächster Monat">${ICON.chev}</button></div>`;
+  if (!M.logs.length) return nav + `<div class="empty"><b>Kein Training im ${monthOnly(k)}</b>${k === cur ? 'Sobald du diesen Monat trainierst, erscheint hier dein Rückblick.' : 'In diesem Monat hast du nichts eingetragen.'}</div>`;
+
+  // Kennzahlen mit Vergleich zum Vormonat
+  const planned = monthPlanned(M.a, M.b);
+  const cmp = (now, before, f = v => v) => P.logs.length ? `<div class="m-cmp ${now > before ? 'up' : ''}">${diffTxt(f(now) - f(before))} zum ${prevName}</div>` : '';
+  const stats = `<div class="card m-stats">
+    <div><div class="big">${M.logs.length}${planned ? `<small> / ${planned}</small>` : ''}</div><div class="sub">${planned ? 'Trainings von geplanten' : 'Trainings'}</div>${cmp(M.logs.length, P.logs.length)}</div>
+    <div><div class="big">${minTxt(M.dur).replace(' min', '<small> min</small>').replace(' h', '<small> h</small>')}</div><div class="sub">Trainingszeit</div>${P.logs.length ? `<div class="m-cmp ${M.dur > P.dur ? 'up' : ''}">${M.dur >= P.dur ? '+' : '−'}${Math.abs(M.dur - P.dur) < 6e4 ? '0 min' : minTxt(Math.abs(M.dur - P.dur))} zum ${prevName}</div>` : ''}</div>
+    <div><div class="big">${M.sets}</div><div class="sub">Sätze</div>${cmp(M.sets, P.sets)}</div>
+    <div><div class="big">${kgShort(M.vol).replace(/ (kg|t)$/, '<small> $1</small>')}</div><div class="sub">bewegt</div>${P.logs.length ? `<div class="m-cmp ${M.vol > P.vol ? 'up' : ''}">${M.vol >= P.vol ? '+' : '−'}${kgShort(Math.abs(M.vol - P.vol))} zum ${prevName}</div>` : ''}</div>
+  </div>`;
+
+  // Kalender des Monats
+  const days = new Set(M.logs.map(l => dayStart(l.startedAt)));
+  const sick = new Set(S.sick || []), today = dayStart(Date.now());
+  let cells = WD.map(w => `<div class="cal-h">${w}</div>`).join('');
+  for (let k2 = 0; k2 < (new Date(M.a).getDay() + 6) % 7; k2++) cells += '<div></div>';
+  for (let t = M.a; t < M.b; t = addDays(t, 1)) {
+    let cls = 'cal-d';
+    if (days.has(t)) cls += ' done'; else if (sick.has(t)) cls += ' sick';
+    if (t === today) cls += ' today';
+    if (t > today) cls += ' future';
+    cells += days.has(t) ? `<button class="${cls}" data-act="calDay" data-t="${t}" aria-label="${fmtDate(t)}, trainiert"><span>${new Date(t).getDate()}</span></button>`
+      : `<div class="${cls}"><span>${new Date(t).getDate()}</span></div>`;
+  }
+  const wdCnt = [0, 0, 0, 0, 0, 0, 0];
+  for (const t of days) wdCnt[(new Date(t).getDay() + 6) % 7]++;
+  const favWd = wdCnt.indexOf(Math.max(...wdCnt));
+  const WDL = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+  const cal = `<div class="card"><div class="cal" style="margin-top:0">${cells}</div>
+    ${days.size > 2 && wdCnt[favWd] > 1 ? `<p class="sub" style="margin:10px 0 0">Am liebsten trainierst du ${WDL[favWd]}s (${wdCnt[favWd]}×).</p>` : ''}</div>`;
+
+  // Fortschritte: schwerster Satz im Monat gegen alles davor
+  const nowB = heaviest(M.logs), beforeB = heaviest(S.logs.filter(l => l.startedAt < M.a));
+  const gains = [...nowB].filter(([n, v]) => beforeB.has(n) && v > beforeB.get(n))
+    .map(([n, v]) => ({ n, from: beforeB.get(n), to: v })).sort((x, y) => (y.to - y.from) - (x.to - x.from));
+  const prog = gains.length ? `<div class="section-title">Fortschritte</div><div class="list">${gains.slice(0, 5).map(g => `<button class="row" data-act="openEx" data-name="${esc(g.n)}"><div class="grow"><div class="title">${esc(g.n)}</div>
+      <div class="sub">${fmtNum(g.from)} kg auf ${fmtNum(g.to)} kg</div></div><span class="m-gain">${diffTxt(g.to - g.from, ' kg')}</span>${ICON.chev}</button>`).join('')}</div>` : '';
+
+  // Neue Rekorde (je Übung der neueste)
+  const recs = M.prs;
+  const recHtml = recs.length ? `<div class="section-title">${recs.length === 1 ? 'Neuer Rekord' : `${recs.length} neue Rekorde`}</div><div class="list">${recs.map(r => `<div class="row"><div class="grow"><div class="title">${esc(r.name)}</div>
+      <div class="sub">${kgTxt(r.weight)} × ${r.reps} Wdh.${SEP}${fmtDate(r.t)}</div></div><span class="pr">PR</span></div>`).join('')}</div>` : '';
+
+  // Muskeln
+  const mc = Object.entries(muscleCounts(M.a, M.b)).filter(([m]) => MUSCLE_DE[m]).sort((x, y) => y[1] - x[1]);
+  const mMax = mc.length ? mc[0][1] : 1;
+  const mus = mc.length ? `<div class="section-title">Muskeln</div><div class="card m-bars">${mc.slice(0, 6).map(([m, v]) => `<div class="m-bar">
+      <span>${MUSCLE_DE[m]}</span><div class="m-track"><i style="width:${Math.max(4, (v / mMax) * 100).toFixed(0)}%"></i></div><b>${fmtNum(Math.round(v * 2) / 2)}</b></div>`).join('')}
+      <p class="sub" style="margin:8px 0 0">Sätze pro Muskel, Hilfsmuskel zählt halb.</p></div>` : '';
+
+  // Höhepunkte
+  const exCnt = new Map();
+  for (const l of M.logs) for (const e of l.entries) if (e.sets.some(x => x.done)) exCnt.set(e.name, (exCnt.get(e.name) || 0) + 1);
+  const favEx = [...exCnt].sort((x, y) => y[1] - x[1])[0];
+  const longest = M.logs.reduce((x, l) => !x || l.endedAt - l.startedAt > x.endedAt - x.startedAt ? l : x, null);
+  const bigVol = M.logs.reduce((x, l) => !x || logStats(l).vol > logStats(x).vol ? l : x, null);
+  const hi = [];
+  if (favEx && favEx[1] > 1) hi.push(`<div class="row"><div class="grow"><div class="sub">Häufigste Übung</div><div class="title">${esc(favEx[0])}</div></div><span class="muted">${favEx[1]}×</span></div>`);
+  if (longest) hi.push(`<button class="row" data-act="openLog" data-id="${longest.id}"><div class="grow"><div class="sub">Längstes Training</div><div class="title">${esc(longest.dayName)}, ${ddmm(longest.startedAt)}</div></div><span class="muted">${minTxt(longest.endedAt - longest.startedAt)}</span>${ICON.chev}</button>`);
+  if (bigVol && M.logs.length > 1) hi.push(`<button class="row" data-act="openLog" data-id="${bigVol.id}"><div class="grow"><div class="sub">Meiste kg bewegt</div><div class="title">${esc(bigVol.dayName)}, ${ddmm(bigVol.startedAt)}</div></div><span class="muted">${kgShort(logStats(bigVol).vol)}</span>${ICON.chev}</button>`);
+  const hiHtml = hi.length ? `<div class="section-title">Höhepunkte</div><div class="list">${hi.join('')}</div>` : '';
+
+  // Körpergewicht
+  const bw = bodySorted().filter(q => q.t >= M.a && q.t < M.b);
+  const bwHtml = bw.length > 1 ? `<div class="section-title">Gewicht</div><button class="card m-bw" data-act="openWeight">
+      <div class="grow"><div class="big">${signKg(bw[bw.length - 1].kg - bw[0].kg).replace(/ kg$/, '<small> kg</small>')}</div>
+      <div class="sub">${fmtKg(bw[0].kg)} am ${ddmm(bw[0].t)} auf ${fmtKg(bw[bw.length - 1].kg)} am ${ddmm(bw[bw.length - 1].t)}</div></div>${ICON.chev}</button>` : '';
+
+  return nav + stats + cal + recHtml + prog + mus + hiHtml + bwHtml;
+}
+
 /* ----- Verlauf pro Übung: Liste und Detailseite ----- */
 function exHistory(name) {
   const out = [];
@@ -1007,10 +1136,10 @@ function musclesForEntry(e) {
   const t = MUSCLES_BY_NAME[e.name];
   return t ? { p: t[0], s: t[1] } : null;
 }
-function muscleCounts(from) {
+function muscleCounts(from, to = Infinity) {
   const cnt = {};
   for (const l of S.logs) {
-    if (l.startedAt < from) continue;
+    if (l.startedAt < from || l.startedAt >= to) continue;
     for (const e of l.entries) {
       const m = musclesForEntry(e); if (!m) continue;
       const n = e.sets.filter(s => s.done).length;
@@ -2083,6 +2212,8 @@ const actions = {
   },
   openWeight() { V.tab = 'log'; openSub('weight'); },
   openExList() { openSub('ex'); },
+  openMonth(el) { if (V.tab !== 'log') selectTab('log'); openSub('month:' + el.dataset.k); },
+  monthGo(el) { V.sub = 'month:' + el.dataset.k; history.replaceState({ sub: V.sub }, ''); render(); },
   openEx(el) { openSub('ex:' + el.dataset.name); },
   setTheme(el) { S.settings.theme = el.dataset.v; save(); applyTheme(); render(); },
   toggleList(el) { V[el.dataset.k] = !V[el.dataset.k]; render(); },
