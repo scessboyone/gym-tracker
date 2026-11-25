@@ -1,0 +1,2 @@
+# Git-Hooks sind Shell-Skripte: immer mit LF-Zeilenenden, sonst laufen sie nicht
+.githooks/* text eol=lf
