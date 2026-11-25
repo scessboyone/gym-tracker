@@ -103,7 +103,7 @@ async function fillAdvInfo() {
 }
 /* Google Drive direkt (nur Android/PC): Anmeldung über Google, Datei landet im Ordner „Gym Tracker“.
    Die Client-ID ist öffentlich (kein Geheimnis); Zugriff nur auf Dateien, die die App selbst anlegt (drive.file). */
-const GDRIVE_CLIENT_ID = '';
+const GDRIVE_CLIENT_ID = '731930896025-tt1tn1db3ga4p6v5q88tr659l9nmj3n1.apps.googleusercontent.com';
 const DRIVE_DIRECT = !!GDRIVE_CLIENT_ID && !IS_IOS;
 let gToken = null, gTokenExp = 0;
 function loadGis() {
