@@ -25,7 +25,25 @@ Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gy
 - Reines HTML/CSS/JS ohne Build-Schritt, gehostet über GitHub Pages
 - Daten nur auf dem Gerät (IndexedDB). Backup: Tab „Mehr“ → „In Drive sichern“ bzw. als Datei
 - Offline-fähig über Service Worker (`sw.js`)
-- Bei jeder Änderung `VERSION` in `sw.js` und `APP_VERSION` in `app.js` hochzählen
+- Bei jeder Änderung `VERSION` in `sw.js` und `APP_VERSION` in `js/core.js` hochzählen
+- Code in `js/`, als normale Skripte nacheinander geladen (Reihenfolge in `index.html`), alle teilen sich den globalen Bereich:
+
+| Datei | Inhalt |
+|---|---|
+| `core.js` | Version, Änderungen, Hilfsfunktionen, Speicher (IndexedDB), App-Zustand |
+| `muscles.js` | Muskel-Grafik, Übungsdatenbank |
+| `home.js` | Rendern, Trainingsauswahl, Home, Kalender-Planung |
+| `training.js` | Laufendes Training im Vollbild, Info zu einer Übung |
+| `plan.js` | Trainingsplan, Übung bearbeiten |
+| `history.js` | Verlauf, Monatsrückblick, Verlauf pro Übung, Woche, Muskeln, Rekorde |
+| `weight.js` | Körpergewicht |
+| `more.js` | Einstellungen, Backup, Google Drive, Plan teilen |
+| `ui.js` | Pausen-Timer, Sheets, Dialoge, Toast |
+| `actions.js` | Alle Aktionen (`data-act`) und Eingaben |
+| `main.js` | Tab-Leiste, Wischen, Hell/Dunkel, Start |
+
+- Neue Dateien in `js/` auch in `index.html` und in `FILES` in `sw.js` eintragen
+- Automatische Tests mit Playwright in `tests/` (siehe `tests/README.md`)
 
 ## Quellen
 - Übungsdaten: [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (Unlicense)

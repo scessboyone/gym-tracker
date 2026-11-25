@@ -3,7 +3,7 @@
 ## Übungsbilder & Übungsdaten
 [free-exercise-db](https://github.com/yuhonas/free-exercise-db) – The Unlicense (gemeinfrei).
 
-## Muskel-Körpermodell (Polygondaten in app.js, Konstante BODY)
+## Muskel-Körpermodell (Polygondaten in js/muscles.js, Konstante BODY)
 Aus [react-body-highlighter](https://github.com/giavinh79/react-body-highlighter), MIT-Lizenz:
 
 ```text
