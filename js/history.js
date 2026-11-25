@@ -256,13 +256,13 @@ function renderHeat() {
     <div class="heat-head"><div><div class="sub">Muskeln</div><b>${label}</b></div>${heatSeg(range)}</div>
     <div class="heat">${fig('front')}${fig('back')}</div>
     <div class="heat-legend"><span><i class="h1"></i>wenig</span><span><i class="h2"></i>mittel</span><span><i class="h3"></i>viel</span><span class="sub">Sätze pro Muskel</span></div>
-    ${top.length ? `<button class="heat-more" data-act="openMuscles">Am meisten und noch nicht dran${ICON.chev}</button>`
+    ${top.length ? `<button class="heat-more" data-act="openMuscles">Muskel-Statistik${ICON.chev}</button>`
       : `<p class="sub" style="margin:12px 0 0;text-align:center">${range === 'w' ? 'Diese Woche' : 'In den letzten 4 Wochen'} noch kein Training.</p>`}
   </div>`;
 }
 // Unterseite: alle Muskeln mit Sätzen und die, die noch nicht dran waren
 function renderMuscles() {
-  setTop('Muskeln', `<button class="linkbtn" data-act="back">${ICON.back}Verlauf</button>`);
+  setTop('Muskel-Statistik', `<button class="linkbtn" data-act="back">${ICON.back}Verlauf</button>`);
   const { range, top, missing, label } = heatData();
   const max = top.length ? top[0][1] : 1;
   const exFor = k => [...new Set(allExercises().filter(o => hasMuscles(o) && o.muscles.p.includes(k)).map(o => o.name))];

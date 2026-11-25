@@ -18,7 +18,7 @@ Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gy
 - iPhone: Safari → Teilen → „Zum Home-Bildschirm“ (Vollbild, eigenes Icon), Backup über „In Dateien sichern“ → iCloud Drive
 - Die App startet leer; Plan als Link oder Datei teilen/übernehmen (Mehr → Plan), ersetzt nur den Plan
 - Tab-Leiste mit verschiebbarer Pille, Wischen zwischen Bereichen, Slide-Animation
-- Rückgängig nach dem Löschen; Muskel-Übersicht (Woche/4 Wochen) im Verlauf, Details „Am meisten“ und „Noch nicht dran“ auf eigener Seite
+- Rückgängig nach dem Löschen; Muskel-Übersicht (Woche/4 Wochen) im Verlauf, Details „Am meisten“ und „Noch nicht dran“ auf eigener Seite „Muskel-Statistik“
 - Rekorde und „Letzte Trainings“ zeigen die neuesten 3, „Alle anzeigen“ klappt auf
 
 ## Technik

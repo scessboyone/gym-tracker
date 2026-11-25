@@ -7,13 +7,16 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.20.4';
+const APP_VERSION = '0.20.5';
 // Änderungen je Version (neueste zuerst). Nach einem Update zeigt die App nur, was seit der zuletzt gesehenen Version neu ist.
 // Neue Version: oben einen Eintrag { v: APP_VERSION, items: [...] } ergänzen.
 const CHANGELOG = [
+  { v: '0.20.5', items: [
+    'Verlauf → Muskeln: Die Details heißen jetzt „Muskel-Statistik“',
+  ] },
   { v: '0.20.4', items: [
     'Wischen zwischen den Bereichen klappt jetzt überall, auch auf der Plan-Seite unterhalb der Liste',
-    'Verlauf → Muskeln: Die Karte zeigt nur noch die Grafik, „Am meisten“ und „Noch nicht dran“ stehen auf einer eigenen Seite',
+    'Verlauf → Muskeln: Die Karte zeigt nur noch die Grafik, „Am meisten“ und „Noch nicht dran“ stehen auf einer eigenen Seite („Muskel-Statistik“)',
   ] },
   { v: '0.20.3', items: [
     'Der Hinweis nach einem Update zeigt nur noch, was seit deiner letzten Version neu ist',
