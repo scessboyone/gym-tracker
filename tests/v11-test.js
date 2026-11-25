@@ -12,10 +12,13 @@ const URL = process.env.TARGET_URL || 'http://127.0.0.1:8777/';
   const errors = [];
   const touch = engineName === 'chromium';
   const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, isMobile: touch, hasTouch: touch, colorScheme: 'dark', serviceWorkers: 'block', locale: 'de-DE' });
+  // Übungsbilder/-datenbank nicht echt von GitHub laden (bei vielen Testläufen blockt GitHub sonst)
+  await ctx.route('https://raw.githubusercontent.com/**', r => r.fulfill({ status: 404, headers: { 'access-control-allow-origin': '*' }, body: '' }));
   const page = await ctx.newPage();
-  page.on('pageerror', e => errors.push(e.message));
+  // WebKit meldet abgewiesene Bild-Abrufe von GitHub als Seitenfehler, obwohl die App sie abfängt (Netz, kein App-Fehler)
+  page.on('pageerror', e => { if (!/raw\.githubusercontent\.com.*access control/.test(e.message)) errors.push(e.message); });
   const cdp = touch ? await ctx.newCDPSession(page) : null;
-  const okDialog = async () => { await page.locator('#dlg [data-dlg="1"]').click(); await page.waitForTimeout(600); };
+  const okDialog = async () => { await page.locator('#dlg.show [data-dlg="1"]').waitFor(); await page.waitForTimeout(250); await page.locator('#dlg [data-dlg="1"]').click(); await page.waitForTimeout(600); };
   const closeAll = async () => { await page.evaluate(() => { if (sheetOpen) closeSheet(); }); await page.waitForTimeout(250); };
 
   await page.goto(URL); await page.locator('#view').waitFor();

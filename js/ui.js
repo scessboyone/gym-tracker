@@ -192,8 +192,9 @@ function hideSheet() {
 function closeSheet() { if (!sheetOpen) return; hideSheet(); ignorePop = true; history.back(); }
 window.addEventListener('popstate', () => {
   if (dlgAfterPop) { dlgAfterPop(); return; }
-  if (dlgCancel) { dlgCancel(); return; }
+  // Das „Zurück“ eines gerade geschlossenen Fensters kann verspätet kommen – dann nicht den neuen Dialog schließen
   if (ignorePop) { ignorePop = false; return; }
+  if (dlgCancel) { dlgCancel(); return; }
   if ($('#celebrate') && !$('#celebrate').dataset.closed) { closeCelebrate(); return; }
   if (sheetOpen) { hideSheet(); return; }
   if (V.sub) {
