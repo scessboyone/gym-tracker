@@ -61,8 +61,14 @@ Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gy
 - Automatische Tests mit Playwright in `tests/` (alle auf einmal: `tests/run-all.js`, Chrome und WebKit, siehe `tests/README.md`)
 - iPhone-Startbilder in `icons/splash/`, neu erzeugen mit `tools/make-splash.js`
 
+## Versionen
+- **1.1.0** (25.11.2026, nach dem ersten echten Gym-Training): allgemeine Pause gilt für alle Übungen (eigene Pause pro Übung optional, Plan-Links bringen keine Pausen mit), Timer zwischen den Übungen abschaltbar, Android-Benachrichtigung mit runterlaufendem Pausen-Timer, Leiste im minimierten Training, Übung auslassen mit Grund, Training nachtragen, Kalendertag gedrückt halten und ziehen, Fenster am Strich wegziehen, alle 876 Übungsanleitungen auf Deutsch. Git-Tag `v1.1.0`
+- **1.0.1**: Backup-Anleitung hinter dem i-Knopf (iPhone/Android)
+- **1.0.0** (25.11.2026): produktiv mit Google-Drive-Backup. Git-Tag `v1.0.0`
+- Ältere Versionen: Änderungsliste `CHANGELOG` in `js/core.js`
+
 ## Quellen
-- Übungsdaten: [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (Unlicense)
+- Übungsdaten: [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (Unlicense); deutsche Anleitungen in `data/anleitung-de.json` daraus übersetzt
 - Muskelmodell: react-body-highlighter (MIT), siehe `THIRD_PARTY.md`
 
 ## Ideen für später
