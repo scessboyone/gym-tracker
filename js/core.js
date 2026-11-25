@@ -7,10 +7,13 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.21.2';
+const APP_VERSION = '0.21.3';
 // Änderungen je Version (neueste zuerst). Nach einem Update zeigt die App nur, was seit der zuletzt gesehenen Version neu ist.
 // Neue Version: oben einen Eintrag { v: APP_VERSION, items: [...] } ergänzen.
 const CHANGELOG = [
+  { v: '0.21.3', items: [
+    'Kein schwarzer Balken mehr oben: Auf Home fällt die leere Kopfzeile weg, auf den anderen Seiten scrollt der große Titel mit weg',
+  ] },
   { v: '0.21.2', items: [
     'Verlauf → Muskeln: „Muskel-Statistik“ ist jetzt immer erreichbar, auch wenn diese Woche noch kein Training war',
     'Die i-Knöpfe stehen jetzt überall direkt neben dem Titel, den sie erklären',

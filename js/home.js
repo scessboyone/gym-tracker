@@ -9,6 +9,11 @@ function setTop(title, left = '', right = '', info = '') {
   $('#title').innerHTML = esc(title) + (info ? infoBtn(info) : '');
   $('#topleft').innerHTML = left;
   $('#topright').innerHTML = right;
+  // Der große Titel scrollt immer mit (wie bei iOS). Nur eine Knopfzeile bleibt beim Scrollen oben stehen;
+  // ohne Knöpfe scrollt auch sie mit, und ohne Titel und Knöpfe (Home) fällt sie ganz weg.
+  const tb = $('#topbar');
+  tb.classList.toggle('bare', !title && !left && !right);
+  tb.classList.toggle('static', !left && !right);
 }
 function render() {
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === V.tab));

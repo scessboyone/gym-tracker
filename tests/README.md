@@ -13,5 +13,6 @@ Brauchen Node und Playwright (z. B. über den Claude-Skill `playwright-skill`).
 | `swipe-test.js` | Wischen zwischen allen Bereichen mit echten Touch-Gesten, mitten im Inhalt und im leeren Bereich unten |
 | `info-test.js` | Jeder i-Knopf öffnet seine Erklärung und schließt sauber, hell und dunkel |
 | `muscles-test.js` | Muskel-Statistik: Übungen ohne erledigten Satz zählen nicht, „Am meisten“ nur über 0 |
+| `topbar-test.js` | Kopfzeile beim Scrollen: Home ohne Leiste, Titel scrollt weg, nur die Knopfzeile bleibt stehen |
 | `offline-test.js` | Service Worker installiert sich, alle App-Dateien liegen im Cache, App startet offline |
 | `screenshots.js` | Screenshots der Trainings-, Monats- und Übungsseiten mit Beispieldaten (Ordner per `PW_ARTIFACT_DIR`) |

@@ -123,12 +123,15 @@ b, strong { font-weight: 700; }
 /* ---------- Kopfzeile ---------- */
 #topbar {
   position: sticky; top: 0; z-index: 10;
-  display: grid; grid-template-columns: 64px 1fr 64px; align-items: end;
-  padding: calc(var(--safe-t) + 12px) max(16px, calc((100% - 640px) / 2 + 16px)) 8px;
+  display: grid; grid-template-columns: auto 1fr auto; align-items: end;
+  padding: calc(var(--safe-t) + 12px) max(16px, calc((100% - 640px) / 2 + 16px)) 4px;
   background: var(--bg);
 }
-#title { grid-column: 1 / -1; grid-row: 2; margin: 4px 0 0; font-family: var(--font-display); font-size: 34px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+#title { margin: 0; padding: 0 max(16px, calc((100% - 640px) / 2 + 16px)) 8px; font-family: var(--font-display); font-size: 34px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
 #title:empty { display: none; }
+#topbar.static { position: relative; }
+#topbar.bare { padding-top: calc(var(--safe-t) + 16px); padding-bottom: 0; } /* nur Abstand, scrollt mit weg */
+#topbar.bare #topleft, #topbar.bare #topright { display: none; }
 #topleft { grid-column: 1; grid-row: 1; min-height: 28px; }
 #topright { grid-column: 3; grid-row: 1; justify-self: end; min-height: 28px; }
 .linkbtn { color: var(--accent); font-size: 17px; padding: 4px 0; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; border-radius: 8px; }
