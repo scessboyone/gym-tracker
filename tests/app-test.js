@@ -2,7 +2,7 @@
 const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
-const { chromium } = require('playwright');
+const engine = require('playwright')[process.env.PW_ENGINE || 'chromium']; // PW_ENGINE=webkit: wie Safari auf dem iPhone
 
 const URL = process.env.TARGET_URL || 'http://127.0.0.1:8777/';
 const OUT = process.env.PW_ARTIFACT_DIR || path.join(os.tmpdir(), 'gym-pw');
@@ -121,7 +121,7 @@ async function run(browser, scheme) {
 }
 
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await engine.launch({ headless: true });
   try {
     for (const scheme of ['light', 'dark']) {
       try { await run(browser, scheme); } catch (e) { ok(scheme, 'Testlauf abgebrochen', false, e.message.split('\n')[0]); }

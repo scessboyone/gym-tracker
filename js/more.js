@@ -264,7 +264,8 @@ async function shareFile(data, name, title, mode) {
 }
 function backupBanner() {
   const lb = S.settings.lastBackup;
-  if (!S.logs.length || (lb && Date.now() - lb < 7 * 86400000)) return '';
+  // iPhone früher erinnern: iOS kann Daten von Web-Apps löschen, wenn der Speicher knapp wird
+  if (!S.logs.length || (lb && Date.now() - lb < (IS_IOS ? 3 : 7) * DAY)) return '';
   return `<div class="card" style="display:flex;align-items:center;gap:12px">
     <div class="grow"><b>Backup fällig</b><div class="sub">${lb ? 'Letztes Backup ' + relDay(lb) : 'Noch kein Backup gemacht'}.</div></div>
     <button class="btn primary small" data-act="driveBackup">In ${CLOUD} sichern</button></div>`;

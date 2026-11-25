@@ -116,6 +116,10 @@ b, strong { font-weight: 700; }
   backdrop-filter: saturate(180%) blur(24px);
   border: 1px solid var(--line);
 }
+/* Ohne Weichzeichner (ältere Browser) deckend statt durchsichtig, sonst scheint Text durch */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass { background: var(--card-solid); }
+}
 /* Trenner zwischen Angaben (statt Mittelpunkt) */
 .sep { display: inline-block; width: 1px; height: 0.8em; margin: 0 8px; background: var(--line); vertical-align: -0.05em; }
 .sub .sep { background: var(--sub); opacity: 0.45; }
@@ -577,3 +581,6 @@ body.focus main { padding-bottom: calc(var(--safe-b) + 176px); }
 .section-title .info-btn { vertical-align: middle; margin: -6px 0 -4px 2px; }
 #title .info-btn { vertical-align: middle; width: 36px; height: 36px; margin: -8px 0 -4px 2px; }
 #title .info-btn svg { width: 24px; height: 24px; }
+
+/* ---------- iPhone: Fläche hinter der Uhrzeit (nur bei durchgehender Statusleiste, sonst 0 px hoch) ---------- */
+body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: var(--safe-t); background: var(--bg); z-index: 60; pointer-events: none; }

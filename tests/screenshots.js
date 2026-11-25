@@ -1,7 +1,7 @@
 // Screenshots der neuen Seiten für das Hallmark-Audit (mit Beispieldaten)
 const path = require('node:path');
 const fs = require('node:fs');
-const { chromium } = require('playwright');
+const engine = require('playwright')[process.env.PW_ENGINE || 'chromium']; // PW_ENGINE=webkit: wie Safari auf dem iPhone
 const URL = 'http://127.0.0.1:8777/';
 const OUT = process.env.PW_ARTIFACT_DIR || path.join(require('node:os').tmpdir(), 'gym-screens');
 fs.mkdirSync(OUT, { recursive: true });
@@ -29,7 +29,7 @@ const seed = () => {
 };
 
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await engine.launch({ headless: true });
   for (const [scheme, vw] of [['light', 412], ['dark', 412], ['dark', 1440]]) {
     const ctx = await browser.newContext({ viewport: { width: vw, height: vw > 800 ? 900 : 915 }, deviceScaleFactor: vw > 800 ? 1 : 2, colorScheme: scheme, isMobile: vw < 800, hasTouch: vw < 800, locale: 'de-DE', serviceWorkers: 'block' });
     const page = await ctx.newPage();

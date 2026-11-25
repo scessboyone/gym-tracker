@@ -1,7 +1,7 @@
 // Prüft die Vergleichstexte im Monatsrückblick an Sonderdaten (gefälschtes Datum)
-const { chromium } = require('playwright');
+const engine = require('playwright')[process.env.PW_ENGINE || 'chromium']; // PW_ENGINE=webkit: wie Safari auf dem iPhone
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await engine.launch({ headless: true });
   for (const [y, m, d] of [[2027, 2, 30], [2026, 4, 31], [2026, 10, 1], [2026, 10, 25]]) {
     const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, serviceWorkers: 'block', locale: 'de-DE' });
     await ctx.addInitScript(`{ const RD = Date, off = new RD(${y}, ${m}, ${d}, 20).getTime() - RD.now();

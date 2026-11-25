@@ -3,8 +3,12 @@
 Laufen gegen eine lokale Kopie der App in Handybreite (412 × 915), hell und dunkel.
 Brauchen Node und Playwright (z. B. über den Claude-Skill `playwright-skill`).
 
-1. Im App-Ordner einen Server starten: `python -m http.server 8777 --bind 127.0.0.1`
-2. Test starten: `node <playwright-skill>/run.js tests/app-test.js`
+**Alles auf einmal** (startet selbst einen Server, erst Chrome wie am Pixel, dann WebKit wie Safari am iPhone):
+`node <playwright-skill>/run.js tests/run-all.js` (nur ein Browser: `RUN_ENGINES=webkit`)
+
+Einzelner Test: im App-Ordner `python -m http.server 8777 --bind 127.0.0.1` starten, dann
+`node <playwright-skill>/run.js tests/app-test.js` (Safari-Engine: `PW_ENGINE=webkit` davor).
+WebKit einmalig installieren: im Skill-Ordner `npx playwright install webkit`.
 
 | Datei | Was |
 |---|---|
@@ -15,4 +19,5 @@ Brauchen Node und Playwright (z. B. über den Claude-Skill `playwright-skill`).
 | `muscles-test.js` | Muskel-Statistik: Übungen ohne erledigten Satz zählen nicht, „Am meisten“ nur über 0 |
 | `topbar-test.js` | Kopfzeile beim Scrollen: Home ohne Leiste, Titel scrollt weg, nur die Knopfzeile bleibt stehen |
 | `offline-test.js` | Service Worker installiert sich, alle App-Dateien liegen im Cache, App startet offline |
+| `run-all.js` | Startet den Server und alle Tests in Chrome und WebKit, mit Zusammenfassung |
 | `screenshots.js` | Screenshots der Trainings-, Monats- und Übungsseiten mit Beispieldaten (Ordner per `PW_ARTIFACT_DIR`) |

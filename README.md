@@ -44,7 +44,8 @@ Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gy
 | `main.js` | Tab-Leiste, Wischen, Hell/Dunkel, Start |
 
 - Neue Dateien in `js/` auch in `index.html` und in `FILES` in `sw.js` eintragen
-- Automatische Tests mit Playwright in `tests/` (siehe `tests/README.md`)
+- Automatische Tests mit Playwright in `tests/` (alle auf einmal: `tests/run-all.js`, Chrome und WebKit, siehe `tests/README.md`)
+- iPhone-Startbilder in `icons/splash/`, neu erzeugen mit `tools/make-splash.js`
 
 ## Quellen
 - Übungsdaten: [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (Unlicense)

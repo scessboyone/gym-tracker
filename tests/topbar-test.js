@@ -2,13 +2,13 @@
 // Seiten mit Knöpfen behalten nur die Knopfzeile (der große Titel scrollt weg). Screenshots in PW_ARTIFACT_DIR.
 const path = require('node:path');
 const fs = require('node:fs');
-const { chromium } = require('playwright');
+const engine = require('playwright')[process.env.PW_ENGINE || 'chromium']; // PW_ENGINE=webkit: wie Safari auf dem iPhone
 const URL = process.env.TARGET_URL || 'http://127.0.0.1:8777/';
 const OUT = process.env.PW_ARTIFACT_DIR || path.join(require('node:os').tmpdir(), 'gym-topbar');
 fs.mkdirSync(OUT, { recursive: true });
 
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await engine.launch({ headless: true });
   const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 2, colorScheme: 'dark', isMobile: true, hasTouch: true, serviceWorkers: 'block', locale: 'de-DE' });
   const page = await ctx.newPage();
   const errors = [];
