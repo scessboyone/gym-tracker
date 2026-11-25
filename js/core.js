@@ -7,53 +7,88 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.20.2';
-// Wird nach einem Update einmal angezeigt
+const APP_VERSION = '0.20.3';
+// Änderungen je Version (neueste zuerst). Nach einem Update zeigt die App nur, was seit der zuletzt gesehenen Version neu ist.
+// Neue Version: oben einen Eintrag { v: APP_VERSION, items: [...] } ergänzen.
 const CHANGELOG = [
-  'Unter der Haube aufgeräumt: Der Code ist jetzt in übersichtliche Teile aufgeteilt, an der Bedienung ändert sich nichts',
-  'Training: Übungsname steht oben, die Grafik ist etwas kleiner – alle Sätze passen ohne Scrollen auf den Bildschirm',
-  'Monatsrückblick und Übungsverlauf aufgeräumt: Vergleich einmal oben, Sätze kürzer („67,5 kg mit 10, 9, 8 Wdh.“)',
-  'Monatsrückblick: zeigt jetzt, wie viele geplante Trainings du geschafft hast; „Zurück“ führt wieder dorthin, wo du hergekommen bist',
-  'Neu: Monatsrückblick unter Verlauf – Trainings, Zeit, kg, Rekorde, Fortschritte und Muskeln pro Monat, mit Vergleich zum Vormonat',
-  'Training im Vollbild: große Muskel-Grafik, große Zahlen, Weiter/Zurück unten – wischen wechselt die Übung, „Minimieren“ bringt die Tab-Leiste zurück. Läuft ein Training, öffnet die App direkt dort',
-  'Training neu: eine Übung pro Seite mit Weiter/Zurück und Fortschrittsbalken – Übung überspringen, wenn die Maschine besetzt ist (kommt am Ende nochmal)',
-  'Verlauf → „Verlauf pro Übung“: alle Sätze, Bestwert und Kurve je Übung auf einer eigenen Seite',
-  'Der Bildschirm bleibt im Training nicht mehr extra an',
-  'Feinschliff: Fenster wie „Neue Übung“ sind nicht mehr durchsichtig, Gewichts-Kopfzeile sauber ausgerichtet, „1 Satz“ statt „1 Sätze“',
-  'Gewicht eintragen: Die Uhrzeit wird nicht mehr abgeschnitten, „Eintragen“ steht jetzt breit darunter',
-  'Neues Design: Hell und Dunkel (Mehr → Darstellung), sportlicher Apple-Stil mit blauem Akzent und Wochenring auf Home',
-  'Neuer Bereich „Home“ ganz links: Begrüßung, was heute ansteht, Woche, Gewicht und letztes Training auf einen Blick',
-  'Rekorde und „Letzte Trainings“ zeigen nur noch die neuesten 3 – „Alle anzeigen“ klappt den Rest auf',
-  'Gewicht: Die aktuelle Uhrzeit wird automatisch eingetragen und lässt sich ändern',
-  'Plan als Link teilen (Mehr → Plan): Empfänger tippt den Link an und kann den Plan übernehmen',
-  'Zwischen den Bereichen wischen: auf der Seite nach links/rechts wischen',
-  'Gelöscht? Kurz „Rückgängig“ tippen – Trainings, Gewichtseinträge, Übungen und Tage',
-  'Verlauf: Muskel-Übersicht – welche Muskeln du diese Woche (oder in 4 Wochen) wie oft trainiert hast',
-  'Fehler behoben: Tab-Leiste verschwand beim Seitenwechsel kurz und die Seite sprang manchmal zurück',
-  'Seitenwechsel läuft jetzt synchron mit der Pille (gleiches Tempo, gleiche Federung)',
-  'Bereichswechsel mit sanfter Animation: die neue Seite gleitet von links bzw. rechts herein',
-  'Tab-Leiste: Pille kurz über einem Bereich halten wechselt schon, ohne loszulassen',
-  'Tab-Leiste: Finger auf der Leiste lassen und die Auswahl-Pille zum gewünschten Bereich schieben – loslassen wechselt',
-  'Plan teilen (Mehr → Plan): nur den Plan ohne Verlauf als Datei weitergeben – beim Laden wird nur der Plan ersetzt, der Verlauf bleibt',
-  'Der eingebaute Beispielplan wurde entfernt – die App startet leer',
-  'iPhone-Unterstützung: eigenes Icon, Vollbild, Backup über iCloud („In Dateien sichern“)',
-  'Neue Installationen starten mit leerem Plan – Beispielplan lässt sich unter Plan bzw. Mehr laden',
-  'Gewicht: Uhrzeit der Messung eintragbar (optional)',
-  'Neue Übung: Beim Tippen des Namens wird direkt die Übungsdatenbank durchsucht – als Letztes immer „Eigene Übung“',
-  'Gewichtsverlauf: Verlauf → Körpergewicht antippen – Diagramm mit Zeitraum, 7-Tage-Schnitt, Zielgewicht, Statistik und allen Einträgen (bearbeiten, nachtragen)',
-  'Kalender bearbeiten (Verlauf → Tag antippen): Training verschieben, anderes Training, ausfallen lassen oder Extra-Training einplanen',
-  'Kalender zeigt jetzt auch die nächste Woche mit Kürzel (OK/UK)',
-  'Eigene Dialoge im App-Design statt der Android-Popups (Notiz, Löschen, Erhöhen …)',
-  'Notizen jetzt grau mit Stift davor – Notiz antippen zum Bearbeiten',
-  'Nur noch das Muskelmodell als Bild – keine Fotos mehr',
-  'Übung wechseln mit dem kleinen blauen Knopf rechts oben in der Übung',
-  'Muskel-Anzeige: Jede Übung zeigt Vorder- und Rückseite mit Haupt- (kräftig rot) und Hilfsmuskeln (hell)',
-  'Übung antippen im Training → große Muskelgrafik mit Namen der Muskeln',
-  'Muskeln selbst anpassen: Plan → Übung → „Muskeln“',
-  'Krank: Tippe im Kalender (Verlauf) auf einen Tag – Krank-Tage zählen nicht gegen deine Serie',
-  'Alternativen (z. B. Kurzhanteln ↔ Bizepsmaschine) haben eigenes Gewicht, eigenen Verlauf und eigene Rekorde',
-  'Alternativen bearbeiten: Plan → Übung antippen → „+ Alternative hinzufügen“',
+  { v: '0.20.3', items: [
+    'Der Hinweis nach einem Update zeigt nur noch, was seit deiner letzten Version neu ist',
+  ] },
+  { v: '0.20.2', items: [
+    'Unter der Haube aufgeräumt: Der Code ist jetzt in übersichtliche Teile aufgeteilt, an der Bedienung ändert sich nichts',
+  ] },
+  { v: '0.20.1', items: [
+    'Monatsrückblick: Vergleich immer mit einem echten Zeitraum (z. B. „Vergleich mit Februar“) und mit Einheit, z. B. „+2 Trainings“',
+  ] },
+  { v: '0.20.0', items: [
+    'Training: Übungsname steht oben, die Grafik ist etwas kleiner – alle Sätze passen ohne Scrollen auf den Bildschirm',
+    'Monatsrückblick und Übungsverlauf aufgeräumt: Vergleich einmal oben, Sätze kürzer („67,5 kg mit 10, 9, 8 Wdh.“)',
+  ] },
+  { v: '0.19.1', items: [
+    'Monatsrückblick: zeigt jetzt, wie viele geplante Trainings du geschafft hast; „Zurück“ führt wieder dorthin, wo du hergekommen bist',
+  ] },
+  { v: '0.19.0', items: [
+    'Neu: Monatsrückblick unter Verlauf – Trainings, Zeit, kg, Rekorde, Fortschritte und Muskeln pro Monat, mit Vergleich zum Vormonat',
+  ] },
+  { v: '0.18.1', items: [
+    'Training im Vollbild: große Muskel-Grafik, große Zahlen, Weiter/Zurück unten – wischen wechselt die Übung, „Minimieren“ bringt die Tab-Leiste zurück. Läuft ein Training, öffnet die App direkt dort',
+  ] },
+  { v: '0.18.0', items: [
+    'Training neu: eine Übung pro Seite mit Weiter/Zurück und Fortschrittsbalken – Übung überspringen, wenn die Maschine besetzt ist (kommt am Ende nochmal)',
+    'Verlauf → „Verlauf pro Übung“: alle Sätze, Bestwert und Kurve je Übung auf einer eigenen Seite',
+  ] },
+  { v: '0.17.0', items: [
+    'Der Bildschirm bleibt im Training nicht mehr extra an',
+  ] },
+  { v: '0.16.3', items: [
+    'Feinschliff: Fenster wie „Neue Übung“ sind nicht mehr durchsichtig, Gewichts-Kopfzeile sauber ausgerichtet, „1 Satz“ statt „1 Sätze“',
+  ] },
+  { v: '0.16.2', items: [
+    'Gewicht eintragen: Die Uhrzeit wird nicht mehr abgeschnitten, „Eintragen“ steht jetzt breit darunter',
+  ] },
+  { v: '0.16.0', items: [
+    'Neues Design: Hell und Dunkel (Mehr → Darstellung), sportlicher Apple-Stil mit blauem Akzent und Wochenring auf Home',
+  ] },
+  { v: '0.15.0', items: [
+    'Neuer Bereich „Home“ ganz links: Begrüßung, was heute ansteht, Woche, Gewicht und letztes Training auf einen Blick',
+    'Rekorde und „Letzte Trainings“ zeigen nur noch die neuesten 3 – „Alle anzeigen“ klappt den Rest auf',
+    'Gewicht: Die aktuelle Uhrzeit wird automatisch eingetragen und lässt sich ändern',
+  ] },
+  { v: '0.14.0', items: [
+    'Plan als Link teilen (Mehr → Plan): Empfänger tippt den Link an und kann den Plan übernehmen',
+    'Zwischen den Bereichen wischen: auf der Seite nach links/rechts wischen',
+    'Gelöscht? Kurz „Rückgängig“ tippen – Trainings, Gewichtseinträge, Übungen und Tage',
+    'Verlauf: Muskel-Übersicht – welche Muskeln du diese Woche (oder in 4 Wochen) wie oft trainiert hast',
+    'Fehler behoben: Tab-Leiste verschwand beim Seitenwechsel kurz und die Seite sprang manchmal zurück',
+    'Seitenwechsel läuft jetzt synchron mit der Pille (gleiches Tempo, gleiche Federung)',
+    'Bereichswechsel mit sanfter Animation: die neue Seite gleitet von links bzw. rechts herein',
+    'Tab-Leiste: Pille kurz über einem Bereich halten wechselt schon, ohne loszulassen',
+    'Tab-Leiste: Finger auf der Leiste lassen und die Auswahl-Pille zum gewünschten Bereich schieben – loslassen wechselt',
+    'Plan teilen (Mehr → Plan): nur den Plan ohne Verlauf als Datei weitergeben – beim Laden wird nur der Plan ersetzt, der Verlauf bleibt',
+    'Der eingebaute Beispielplan wurde entfernt – die App startet leer',
+    'iPhone-Unterstützung: eigenes Icon, Vollbild, Backup über iCloud („In Dateien sichern“)',
+    'Neue Installationen starten mit leerem Plan – Beispielplan lässt sich unter Plan bzw. Mehr laden',
+    'Gewicht: Uhrzeit der Messung eintragbar (optional)',
+    'Neue Übung: Beim Tippen des Namens wird direkt die Übungsdatenbank durchsucht – als Letztes immer „Eigene Übung“',
+    'Gewichtsverlauf: Verlauf → Körpergewicht antippen – Diagramm mit Zeitraum, 7-Tage-Schnitt, Zielgewicht, Statistik und allen Einträgen (bearbeiten, nachtragen)',
+    'Kalender bearbeiten (Verlauf → Tag antippen): Training verschieben, anderes Training, ausfallen lassen oder Extra-Training einplanen',
+    'Kalender zeigt jetzt auch die nächste Woche mit Kürzel (OK/UK)',
+    'Eigene Dialoge im App-Design statt der Android-Popups (Notiz, Löschen, Erhöhen …)',
+    'Notizen jetzt grau mit Stift davor – Notiz antippen zum Bearbeiten',
+    'Nur noch das Muskelmodell als Bild – keine Fotos mehr',
+    'Übung wechseln mit dem kleinen blauen Knopf rechts oben in der Übung',
+    'Muskel-Anzeige: Jede Übung zeigt Vorder- und Rückseite mit Haupt- (kräftig rot) und Hilfsmuskeln (hell)',
+    'Übung antippen im Training → große Muskelgrafik mit Namen der Muskeln',
+    'Muskeln selbst anpassen: Plan → Übung → „Muskeln“',
+    'Krank: Tippe im Kalender (Verlauf) auf einen Tag – Krank-Tage zählen nicht gegen deine Serie',
+    'Alternativen (z. B. Kurzhanteln ↔ Bizepsmaschine) haben eigenes Gewicht, eigenen Verlauf und eigene Rekorde',
+    'Alternativen bearbeiten: Plan → Übung antippen → „+ Alternative hinzufügen“',
+  ] },
 ];
+const verCmp = (x, y) => { const a = String(x).split('.').map(Number), b = String(y).split('.').map(Number);
+  for (let k = 0; k < 3; k++) if ((a[k] || 0) !== (b[k] || 0)) return (a[k] || 0) - (b[k] || 0); return 0; };
+// Neuerungen seit der zuletzt gesehenen Version (ohne gesehene Version: nur die aktuelle)
+const changesSince = seen => CHANGELOG.filter(c => verCmp(c.v, APP_VERSION) <= 0 && (seen ? verCmp(c.v, seen) > 0 : c.v === APP_VERSION)).flatMap(c => c.items);
 const EXDB_URL = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json';
 const EXDB_IMG = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
 

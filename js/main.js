@@ -199,9 +199,10 @@ darkMq.addEventListener('change', applyTheme);
   if (DRIVE_DIRECT) loadGis().catch(() => {});
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   // Neuerungen einmal nach einem Update zeigen (nicht beim allerersten Start)
-  if (saved && S.settings.seenVersion !== APP_VERSION) {
+  const news = saved && S.settings.seenVersion !== APP_VERSION ? changesSince(S.settings.seenVersion) : [];
+  if (news.length) {
     openSheet(`<div class="sheet-head"><h2>Neu in Version ${APP_VERSION}</h2></div>
-      <ul class="instr" style="color:var(--text);font-size:15px">${CHANGELOG.map(c => `<li>${esc(c)}</li>`).join('')}</ul>
+      <ul class="instr" style="color:var(--text);font-size:15px">${news.map(c => `<li>${esc(c)}</li>`).join('')}</ul>
       <button class="btn primary block" data-act="closeSheet">Alles klar</button>`);
   }
   S.settings.seenVersion = APP_VERSION;
