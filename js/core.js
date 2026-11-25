@@ -7,10 +7,16 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.22.0';
+const APP_VERSION = '0.22.1';
 // Änderungen je Version (neueste zuerst). Nach einem Update zeigt die App nur, was seit der zuletzt gesehenen Version neu ist.
 // Neue Version: oben einen Eintrag { v: APP_VERSION, items: [...] } ergänzen.
 const CHANGELOG = [
+  { v: '0.22.1', items: [
+    'Fehler behoben: Tage ohne Übungen lassen sich nicht mehr starten (vorher Absturz)',
+    'Plan übernehmen lässt ein laufendes Training jetzt in Ruhe',
+    'Übung wechseln geht nur noch vor dem ersten abgehakten Satz, damit Verlauf und Rekorde stimmen',
+    'Kleinere Fehler behoben: Pause 0 s, Uhrzeit beim Gewicht leeren, Backup-Datum, Gewichte ab 1.000 kg, Rückgängig',
+  ] },
   { v: '0.22.0', items: [
     'iPhone: Startbild beim Öffnen statt weißer Fläche, im Dunkelmodus reicht die App bis unter die Uhrzeit',
     'iPhone: Die Backup-Erinnerung kommt schon nach 3 Tagen, weil iOS Daten von Web-Apps löschen kann',
@@ -92,6 +98,8 @@ const $ = (s, r = document) => r.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return Number.isFinite(n) ? n : 0; };
 const fmtNum = n => (Math.round(n * 100) / 100).toLocaleString('de-DE');
+// Für Eingabefelder ohne Tausenderpunkt: „1.000“ würde beim Einlesen zu 1
+const fmtIn = n => (Math.round(n * 100) / 100).toLocaleString('de-DE', { useGrouping: false });
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const clone = o => JSON.parse(JSON.stringify(o));
 const dayStart = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
@@ -154,6 +162,7 @@ const idb = {
       const r = fn(t.objectStore('kv'));
       t.oncomplete = () => res(r && r.result);
       t.onerror = () => rej(t.error);
+      t.onabort = () => rej(t.error || new Error('Speichern abgebrochen')); // z. B. Speicher voll
     });
   },
   get: k => idb.req('readonly', s => s.get(k)),
@@ -171,7 +180,12 @@ let S = { v: 1, plan: { days: [] }, logs: [], body: [], active: null, settings: 
 const V = { tab: 'home', sub: null }; // sub = geöffneter Trainingstag im Plan-Editor
 const localImgs = {}; // id -> dataURL
 let saveTimer = null;
-function save() { clearTimeout(saveTimer); saveTimer = setTimeout(flush, 250); }
+function save() {
+  // Jede weitere Änderung beendet ein offenes „Rückgängig“ – sonst würde es diese Änderung mit zurückdrehen
+  if (!undoBusy && typeof undoPending !== 'undefined' && undoPending) dropUndo();
+  clearTimeout(saveTimer); saveTimer = setTimeout(flush, 250);
+}
+let undoBusy = false;
 function flush() { clearTimeout(saveTimer); return idb.set('state', S).catch(err => toast('Speichern fehlgeschlagen: ' + err)); }
 
 const findDay = id => S.plan.days.find(d => d.id === id);

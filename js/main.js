@@ -8,7 +8,8 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 function selectTab(t) {
   V.backTab = null;
   if (sheetOpen) closeSheet();
-  if (V.sub) { V.sub = null; const n = subDepth || 1; subDepth = 0; history.go(-n); }
+  // Nur eigene Unterseiten-Einträge zurückgehen – nie weiter, sonst verließe man die App
+  if (V.sub) { V.sub = null; const n = subDepth; subDepth = 0; if (n) history.go(-n); }
   const dir = Math.sign(TAB_ORDER.indexOf(t) - TAB_ORDER.indexOf(V.tab)); // 1 = nach rechts
   V.tab = t; render(); scrollTo(0, 0);
   if (dir) slideIn(dir);
@@ -195,6 +196,7 @@ darkMq.addEventListener('change', applyTheme);
     for (const k of await idb.keys()) if (String(k).startsWith('img:')) localImgs[k.slice(4)] = await idb.get(k);
   } catch (e) { toast('Speicher nicht verfügbar: ' + e.message); }
   applyTheme();
+  if (S.active && !(S.active.entries || []).length) S.active = null; // Training ohne Übungen (früherer Fehler)
   if (S.active) V.tab = 'train'; // laufendes Training: direkt wieder im Vollbild
   render();
   if (DRIVE_DIRECT) loadGis().catch(() => {});

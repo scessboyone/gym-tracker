@@ -131,10 +131,13 @@ function toast(msg, action) {
 // cleanup läuft erst, wenn nicht rückgängig gemacht wurde (z. B. Bild endgültig löschen).
 let undoPending = null;
 function finishUndo() { const u = undoPending; undoPending = null; if (u && u.cleanup) u.cleanup(); }
+// Rückgängig verfällt (z. B. weil etwas anderes gespeichert wurde): Hinweis mit dem Knopf ausblenden
+function dropUndo() { finishUndo(); const t = $('#toast'); if (t.classList.contains('act')) { clearTimeout(toastT); t.hidden = true; } }
 function withUndo(msg, change, cleanup) {
   if (undoPending) finishUndo();
   const snap = JSON.stringify(S);
-  change();
+  undoBusy = true;
+  try { change(); } finally { undoBusy = false; }
   const u = { cleanup };
   toast(msg, {
     label: 'Rückgängig',

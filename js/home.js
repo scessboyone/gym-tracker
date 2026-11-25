@@ -197,7 +197,8 @@ function hasSchedule() { return S.plan.days.some(d => (d.weekdays || []).length)
 function regularOn(t) { const wd = wdOf(t); const d = S.plan.days.find(x => (x.weekdays || []).includes(wd)); return d ? d.id : null; }
 function planOn(t) {
   const o = (S.cal || {})[t];
-  if (o) { const d = o.d && findDay(o.d) ? o.d : null; return { d, x: !!(o.x && d), changed: true }; }
+  // Eintrag zeigt auf einen Tag, den es nicht mehr gibt (gelöscht, neuer Plan): normal planen statt „fällt aus“
+  if (o && !(o.d && !findDay(o.d))) { const d = o.d || null; return { d, x: !!(o.x && d), changed: true }; }
   return { d: regularOn(t), x: false, changed: false };
 }
 function setPlan(t, d, x = false) {

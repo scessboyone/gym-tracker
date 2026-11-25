@@ -154,11 +154,12 @@ async function driveRestore() {
 // Backup: mode 'share' = Teilen-Menü (Android: Google Drive, iPhone: „In Dateien sichern“ → iCloud), 'file' = Download.
 // Chrome erlaubt beim Teilen keine .json-Dateien, daher .txt (Inhalt ist JSON).
 async function exportData(mode) {
+  const prev = S.settings.lastBackup;
   S.settings.lastBackup = Date.now();
   const data = await backupData();
   const name = `gym-backup-${new Date().toISOString().slice(0, 10)}.txt`;
   const res = await shareFile(data, name, 'Gym-Backup', mode);
-  if (res === 'abort') { S.settings.lastBackup = null; save(); return; }
+  if (res === 'abort') { S.settings.lastBackup = prev || null; save(); return; } // altes Datum behalten
   if (res === 'file') toast(IS_IOS ? 'Backup gespeichert (Dateien-App)' : 'Backup gespeichert (Downloads)');
   render();
 }
@@ -170,7 +171,7 @@ const unb64u = str => Uint8Array.from(atob(str.replace(/-/g, '+').replace(/_/g, 
 async function pipeBytes(bytes, stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
 function slimEx(e) {
   const o = { n: e.name, r: [e.repMin, e.repMax], w: e.weight };
-  if (e.sets) o.s = e.sets; if (e.rest) o.p = e.rest; if (e.note) o.t = e.note; if (e.dbId) o.d = e.dbId;
+  if (e.sets) o.s = e.sets; if (e.rest != null) o.p = e.rest; if (e.note) o.t = e.note; if (e.dbId) o.d = e.dbId;
   if (e.muscles && !e.dbId && !MUSCLES_BY_NAME[e.name]) o.m = e.muscles;
   if ((e.alts || []).length) o.a = e.alts.map(slimEx);
   return o;
@@ -178,7 +179,7 @@ function slimEx(e) {
 function fatEx(o, isAlt) {
   const e = { id: uid(), name: o.n || 'Übung', repMin: o.r[0], repMax: o.r[1], reps: o.r[0], weight: o.w || 0, note: o.t || '', dbId: o.d || null,
     image: o.d ? { type: 'db', value: o.d + '/0.jpg' } : null };
-  if (!isAlt) { e.sets = o.s || 3; e.rest = o.p || 90; }
+  if (!isAlt) { e.sets = o.s || 3; e.rest = o.p ?? 90; }
   if (o.m) e.muscles = o.m;
   if (o.a) e.alts = o.a.map(x => fatEx(x, true));
   return e;
@@ -207,13 +208,39 @@ async function sharePlanLink() {
   }
   try { await navigator.clipboard.writeText(url); toast('Link kopiert'); } catch { toast('Teilen nicht möglich'); }
 }
-// Plan übernehmen (aus Link oder Datei) – ersetzt nur den Plan, Verlauf bleibt
+// Plan aus fremder Quelle (Link, Datei, Backup) prüfen: nur erwartete Felder und Typen übernehmen,
+// damit nichts Fremdes ins HTML gelangt
+const safeId = x => typeof x === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(x) ? x : uid();
+const int = (v, d, min = 0) => { const n = Math.round(num(v)); return Number.isFinite(n) && n >= min ? n : d; };
+const muscleList = l => Array.isArray(l) ? l.filter(m => typeof m === 'string' && MUSCLE_DE[m]) : [];
+function cleanEx(e, isAlt) {
+  const dbId = typeof e.dbId === 'string' && /^[A-Za-z0-9_-]+$/.test(e.dbId) ? e.dbId : null;
+  const img = e.image && typeof e.image.value === 'string' ? e.image : null;
+  const repMin = int(e.repMin, 8, 1), repMax = Math.max(repMin, int(e.repMax, repMin, 1));
+  const o = { id: safeId(e.id), name: String(e.name || 'Übung').slice(0, 80), repMin, repMax, reps: int(e.reps, repMin, 1),
+    weight: Math.max(0, num(e.weight)), note: String(e.note || '').slice(0, 500), dbId,
+    image: img && img.type === 'db' && dbId ? { type: 'db', value: img.value.replace(/[^A-Za-z0-9_./-]/g, '') }
+      : img && img.type === 'url' && /^https?:\/\//.test(img.value) ? { type: 'url', value: img.value }
+      : img && img.type === 'local' ? { type: 'local', value: safeId(img.value) } : null };
+  if (e.muscles) o.muscles = { p: muscleList(e.muscles.p), s: muscleList(e.muscles.s) };
+  if (!isAlt) { o.sets = int(e.sets, 3, 1); o.rest = int(e.rest, 90); o.alts = (Array.isArray(e.alts) ? e.alts : []).map(a => cleanEx(a, true)); }
+  return o;
+}
+function cleanPlan(p) {
+  return { days: (Array.isArray(p && p.days) ? p.days : []).map(d => ({
+    id: safeId(d.id), name: String(d.name || 'Tag').slice(0, 60),
+    weekdays: (Array.isArray(d.weekdays) ? d.weekdays : []).filter(w => Number.isInteger(w) && w >= 0 && w <= 6),
+    exercises: (Array.isArray(d.exercises) ? d.exercises : []).map(e => cleanEx(e)),
+  })) };
+}
+// Plan übernehmen (aus Link oder Datei) – ersetzt nur den Plan, Verlauf und laufendes Training bleiben
 async function adoptPlan(plan) {
+  plan = cleanPlan(plan);
   const n = plan.days.length;
   const names = plan.days.map(d => d.name).join(', ');
   if (!await ask('Plan übernehmen?', `${n} Trainingstag${n === 1 ? '' : 'e'}: ${names}. ${S.plan.days.length ? 'Dein aktueller Plan wird ersetzt. ' : ''}Dein Verlauf bleibt erhalten.`, 'Übernehmen', !!S.plan.days.length)) return;
   const old = JSON.stringify(S.plan);
-  S.plan = plan; S.active = null; save(); V.tab = 'plan'; V.sub = null; render(); warmAll(); fillMuscles();
+  S.plan = plan; save(); selectTab('plan'); warmAll(); fillMuscles(); // selectTab räumt auch offene Unterseiten auf
   if (old !== '{"days":[]}') toast('Plan übernommen', { label: 'Rückgängig', fn: () => { S.plan = JSON.parse(old); save(); render(); toast('Alter Plan wiederhergestellt'); } });
   else toast('Plan übernommen');
 }
@@ -280,6 +307,7 @@ async function importData(file) {
     for (const k of Object.keys(localImgs)) delete localImgs[k];
     for (const [k, v] of Object.entries(data.images || {})) { await idb.set(k, v); localImgs[k.slice(4)] = v; }
     S = Object.assign({ settings: { rest: 90 }, logs: [], active: null }, data.state);
+    S.plan = cleanPlan(S.plan);
     delete S.settings.wakeLock; delete S.settings.notify;
     await flush(); render(); toast('Backup geladen');
   } catch (e) { toast('Import fehlgeschlagen: ' + e.message); }

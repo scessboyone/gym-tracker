@@ -65,7 +65,7 @@ function exThumb(o, cls = 'thumb') {
 }
 function muscleLegend(o) {
   if (!hasMuscles(o)) return '';
-  const n = l => l.map(m => MUSCLE_DE[m] || m).join(', ');
+  const n = l => l.map(m => MUSCLE_DE[m] || esc(m)).join(', ');
   return `<p class="sub" style="margin:6px 0 0"><span class="dot-mp"></span>${n(o.muscles.p)}${o.muscles.s.length ? `${SEP}<span class="dot-ms"></span>${n(o.muscles.s)}` : ''}</p>`;
 }
 // Muskeln für Übungen ohne Angabe ergänzen (Tabelle, sonst aus der Übungsdatenbank)

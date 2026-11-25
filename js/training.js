@@ -47,6 +47,10 @@ function workoutHead() {
 function renderWorkout() {
   const A = S.active;
   ensureOrder(A);
+  if (!A.order.length) { // Training ohne Übungen (ältere Version): nicht abstürzen, nur verwerfen anbieten
+    setTop('Training');
+    return '<div class="empty"><b>Keine Übungen</b>Dieses Training hat keine Übungen.</div><button class="btn block" data-act="cancelWorkout">Training verwerfen</button>';
+  }
   setTop('', `<button class="linkbtn" data-act="minimize" aria-label="Training minimieren">${ICON.down}Minimieren</button>`, '<button class="linkbtn" data-act="finish">Beenden</button>');
   const i = A.order[A.pos], last = A.pos === A.order.length - 1;
   return `${workoutHead()}
@@ -97,7 +101,7 @@ function renderEntry(en, i) {
       <div class="set-row hdr"><span>Satz</span><span>kg</span><span>Wdh.</span><span></span></div>
       ${en.sets.map((s, j) => `<div class="set-row ${s.done ? 'done' : ''}">
         <span class="set-no">${j + 1}</span>
-        <input inputmode="decimal" enterkeyhint="next" data-field="weight" data-i="${i}" data-j="${j}" value="${fmtNum(s.weight)}" aria-label="Gewicht in kg">
+        <input inputmode="decimal" enterkeyhint="next" data-field="weight" data-i="${i}" data-j="${j}" value="${fmtIn(s.weight)}" aria-label="Gewicht in kg">
         <input inputmode="numeric" enterkeyhint="done" data-field="reps" data-i="${i}" data-j="${j}" value="${s.reps}" aria-label="Wiederholungen">
         <button class="check" data-act="toggleSet" data-i="${i}" data-j="${j}" aria-label="Satz abhaken">${ICON.check}</button>
       </div>`).join('')}
@@ -149,6 +153,7 @@ setInterval(tickElapsed, 1000);
 function startWorkout(dayId) {
   const d = findDay(dayId);
   if (!d) return;
+  if (!d.exercises.length) { toast(`„${d.name}“ hat noch keine Übungen – leg sie unter Plan an`); return; }
   S.active = {
     id: uid(), dayId: d.id, dayName: d.name, startedAt: Date.now(),
     entries: d.exercises.map(e => {
@@ -160,7 +165,7 @@ function startWorkout(dayId) {
       }
       const v = (varId && findEx(varId)) || e;
       return {
-        exId: e.id, varId, name: v.name, rest: e.rest || S.settings.rest, image: v.image,
+        exId: e.id, varId, name: v.name, rest: e.rest ?? S.settings.rest, image: v.image,
         sets: Array.from({ length: Math.max(1, e.sets) }, () => ({ weight: v.weight, reps: v.reps || v.repMin, done: false })),
       };
     }),

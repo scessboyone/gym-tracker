@@ -140,7 +140,7 @@ function bwEditSheet(t) {
       <label class="field"><span>Datum</span><input class="input" type="date" id="bwe-date" value="${toIsoDate(t)}" max="${toIsoDate(Date.now())}"></label>
       ${timeField('bwe-time', e.time)}
     </div>
-    <label class="field"><span>Gewicht</span><div class="unit-wrap"><input class="input" id="bwe-kg" inputmode="decimal" value="${fmtNum(e.kg)}"><span>kg</span></div></label>
+    <label class="field"><span>Gewicht</span><div class="unit-wrap"><input class="input" id="bwe-kg" inputmode="decimal" value="${fmtIn(e.kg)}"><span>kg</span></div></label>
     <button class="btn primary block" data-act="bwSave" data-t="${t}">Speichern</button>
     <button class="btn danger block" data-act="bwDel" data-t="${t}">Eintrag löschen</button>`);
 }

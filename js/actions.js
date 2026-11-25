@@ -171,6 +171,8 @@ const actions = {
     const i = +el.dataset.i, en = S.active.entries[i];
     const base = findEx(en.exId);
     if (!base || !(base.alts || []).length) return;
+    // Sonst würden die schon gemachten Sätze der anderen Übung zugerechnet (Verlauf, Rekorde)
+    if (en.sets.some(s => s.done)) { toast('Wechseln geht nur vor dem ersten abgehakten Satz'); return; }
     const ids = [base.id, ...base.alts.map(a => a.id)];
     const next = ids[(ids.indexOf(effId(en)) + 1) % ids.length];
     en.varId = next === base.id ? null : next;
@@ -251,9 +253,9 @@ const actions = {
     addBodyEntry(t, kg, time);
     save(); render(); toast(`${fmtKg(kg)} am ${ddmm(t)}${time ? ' um ' + time + ' Uhr' : ''} eingetragen`);
   },
-  clearTime(el) { const i = $('#' + el.dataset.for); i.value = ''; el.hidden = true; },
+  clearTime(el) { const i = $('#' + el.dataset.for); i.value = ''; delete i.dataset.auto; el.hidden = true; },
   async bwGoal() {
-    const v = await askText('Zielgewicht', { text: 'Wird als Linie im Diagramm angezeigt. Leer lassen = kein Ziel.', value: S.settings.goalKg ? fmtNum(S.settings.goalKg) : '', inputmode: 'decimal', unit: 'kg' });
+    const v = await askText('Zielgewicht', { text: 'Wird als Linie im Diagramm angezeigt. Leer lassen = kein Ziel.', value: S.settings.goalKg ? fmtIn(S.settings.goalKg) : '', inputmode: 'decimal', unit: 'kg' });
     if (v === null) return;
     const n = num(v);
     if (v.trim() && (n < 20 || n > 400)) { toast('Bitte ein Gewicht in kg eingeben'); return; }

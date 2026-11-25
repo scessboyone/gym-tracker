@@ -61,7 +61,7 @@ function drawExSheet() {
       <label class="field"><span>Wdh. von</span><input class="input" id="f-rmin" inputmode="numeric" value="${e.repMin}"></label>
       <label class="field"><span>Wdh. bis</span><input class="input" id="f-rmax" inputmode="numeric" value="${e.repMax}"></label>
       ${main ? `<label class="field"><span>Sätze</span><input class="input" id="f-sets" inputmode="numeric" value="${e.sets}"></label>` : ''}
-      <label class="field"><span>Gewicht (kg, 0 = ohne)</span><input class="input" id="f-weight" inputmode="decimal" value="${fmtNum(e.weight)}"></label>
+      <label class="field"><span>Gewicht (kg, 0 = ohne)</span><input class="input" id="f-weight" inputmode="decimal" value="${fmtIn(e.weight)}"></label>
       ${main ? `<label class="field"><span>Pause (Sekunden)</span><input class="input" id="f-rest" inputmode="numeric" value="${e.rest}"></label>` : ''}
     </div>
     <label class="field"><span>Notiz / Einstellungen (z. B. Sitzhöhe, Stufe, Griff)</span><textarea class="input" id="f-note" placeholder="z. B. Sitz Stufe 5, Polster auf 3">${esc(e.note)}</textarea></label>
