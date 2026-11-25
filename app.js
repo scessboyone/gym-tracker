@@ -5,9 +5,10 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.19.0';
+const APP_VERSION = '0.19.1';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
+  'Monatsrückblick: zeigt jetzt, wie viele geplante Trainings du geschafft hast; „Zurück“ führt wieder dorthin, wo du hergekommen bist',
   'Neu: Monatsrückblick unter Verlauf – Trainings, Zeit, kg, Rekorde, Fortschritte und Muskeln pro Monat, mit Vergleich zum Vormonat',
   'Training im Vollbild: große Muskel-Grafik, große Zahlen, Weiter/Zurück unten – wischen wechselt die Übung, „Minimieren“ bringt die Tab-Leiste zurück. Läuft ein Training, öffnet die App direkt dort',
   'Training neu: eine Übung pro Seite mit Weiter/Zurück und Fortschrittsbalken – Übung überspringen, wenn die Maschine besetzt ist (kommt am Ende nochmal)',
@@ -975,14 +976,17 @@ function monthStats(k, upTo = 31) { // upTo: nur bis zu diesem Tag im Monat zäh
   const seen = new Set(), prs = logs.flatMap(l => (l.prs || []).map(p => ({ ...p, t: l.startedAt }))).filter(r => !seen.has(r.name) && seen.add(r.name));
   return { a, b, logs, sets, vol, dur, prs };
 }
-// Geplante Trainings im Monat (bis heute, ohne Extra- und Krank-Tage)
-function monthPlanned(a, b) {
-  if (!hasSchedule()) return 0;
+// Geplante Trainingstage im Monat (bis heute, ohne Extra- und Krank-Tage) und wie viele davon trainiert wurden
+function monthPlanned(a, b, trained) {
+  if (!hasSchedule()) return { planned: 0, hit: 0 };
   const sick = new Set(S.sick || []), since = dayStart(S.settings.since || Date.now());
-  const end = Math.min(b, dayStart(Date.now()) + DAY);
-  let n = 0;
-  for (let t = a; t < end; t = addDays(t, 1)) { const q = planOn(t); if (q.d && !q.x && t >= since && !sick.has(t)) n++; }
-  return n;
+  const end = Math.min(b, addDays(dayStart(Date.now()), 1));
+  let planned = 0, hit = 0;
+  for (let t = a; t < end; t = addDays(t, 1)) {
+    const q = planOn(t);
+    if (q.d && !q.x && t >= since && !sick.has(t)) { planned++; if (trained.has(t)) hit++; }
+  }
+  return { planned, hit };
 }
 // Schwerster Satz je Übung in einem Zeitraum
 function heaviest(logs) {
@@ -993,7 +997,7 @@ function heaviest(logs) {
 const kgShort = v => v >= 10000 ? `${fmtNum(Math.round(v / 100) / 10)} t` : `${fmtNum(Math.round(v))} kg`;
 const diffTxt = (d, unit = '') => d > 0 ? `+${fmtNum(d)}${unit}` : d < 0 ? `−${fmtNum(-d)}${unit}` : `±0${unit}`;
 function renderMonth(k) {
-  setTop('Monatsrückblick', `<button class="linkbtn" data-act="back">${ICON.back}Verlauf</button>`);
+  setTop('Monatsrückblick', `<button class="linkbtn" data-act="back">${ICON.back}${V.backTab === 'home' ? 'Home' : 'Verlauf'}</button>`);
   const cur = monthKey(Date.now());
   const first = monthKey(Math.min(Date.now(), S.settings.since || Date.now(), ...S.logs.map(l => l.startedAt)));
   // Laufender Monat: mit demselben Zeitraum im Vormonat vergleichen (1. bis heute)
@@ -1008,17 +1012,18 @@ function renderMonth(k) {
   if (!M.logs.length) return nav + `<div class="empty"><b>Kein Training im ${monthOnly(k)}</b>${k === cur ? 'Sobald du diesen Monat trainierst, erscheint hier dein Rückblick.' : 'In diesem Monat hast du nichts eingetragen.'}</div>`;
 
   // Kennzahlen mit Vergleich zum Vormonat
-  const planned = monthPlanned(M.a, M.b);
+  const days = new Set(M.logs.map(l => dayStart(l.startedAt)));
+  const { planned, hit } = monthPlanned(M.a, M.b, days);
+  const dDur = M.dur - P.dur;
   const cmp = (now, before, f = v => v) => P.logs.length ? `<div class="m-cmp ${now > before ? 'up' : ''}">${diffTxt(f(now) - f(before))} zum ${prevName}</div>` : '';
   const stats = `<div class="card m-stats">
-    <div><div class="big">${M.logs.length}${planned ? `<small> / ${planned}</small>` : ''}</div><div class="sub">${planned ? 'Trainings von geplanten' : 'Trainings'}</div>${cmp(M.logs.length, P.logs.length)}</div>
-    <div><div class="big">${minTxt(M.dur).replace(' min', '<small> min</small>').replace(' h', '<small> h</small>')}</div><div class="sub">Trainingszeit</div>${P.logs.length ? `<div class="m-cmp ${M.dur > P.dur ? 'up' : ''}">${M.dur >= P.dur ? '+' : '−'}${Math.abs(M.dur - P.dur) < 6e4 ? '0 min' : minTxt(Math.abs(M.dur - P.dur))} zum ${prevName}</div>` : ''}</div>
+    <div><div class="big">${M.logs.length}</div><div class="sub">Trainings${planned ? `, ${hit} von ${planned} geplanten geschafft` : ''}</div>${cmp(M.logs.length, P.logs.length)}</div>
+    <div><div class="big">${minTxt(M.dur).replace(' min', '<small> min</small>').replace(' h', '<small> h</small>')}</div><div class="sub">Trainingszeit</div>${P.logs.length ? `<div class="m-cmp ${dDur >= 6e4 ? 'up' : ''}">${Math.abs(dDur) < 6e4 ? '±0 min' : (dDur > 0 ? '+' : '−') + minTxt(Math.abs(dDur))} zum ${prevName}</div>` : ''}</div>
     <div><div class="big">${M.sets}</div><div class="sub">Sätze</div>${cmp(M.sets, P.sets)}</div>
     <div><div class="big">${kgShort(M.vol).replace(/ (kg|t)$/, '<small> $1</small>')}</div><div class="sub">bewegt</div>${P.logs.length ? `<div class="m-cmp ${M.vol > P.vol ? 'up' : ''}">${M.vol >= P.vol ? '+' : '−'}${kgShort(Math.abs(M.vol - P.vol))} zum ${prevName}</div>` : ''}</div>
   </div>`;
 
   // Kalender des Monats
-  const days = new Set(M.logs.map(l => dayStart(l.startedAt)));
   const sick = new Set(S.sick || []), today = dayStart(Date.now());
   let cells = WD.map(w => `<div class="cal-h">${w}</div>`).join('');
   for (let k2 = 0; k2 < (new Date(M.a).getDay() + 6) % 7; k2++) cells += '<div></div>';
@@ -1035,7 +1040,7 @@ function renderMonth(k) {
   const favWd = wdCnt.indexOf(Math.max(...wdCnt));
   const WDL = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
   const cal = `<div class="card"><div class="cal" style="margin-top:0">${cells}</div>
-    ${days.size > 2 && wdCnt[favWd] > 1 ? `<p class="sub" style="margin:10px 0 0">Am liebsten trainierst du ${WDL[favWd]}s (${wdCnt[favWd]}×).</p>` : ''}</div>`;
+    ${days.size > 2 && wdCnt[favWd] > 1 ? `<p class="sub" style="margin:10px 0 0">Am liebsten trainierst du ${WDL[favWd].toLowerCase()}s (${wdCnt[favWd]}×).</p>` : ''}</div>`;
 
   // Fortschritte: schwerster Satz im Monat gegen alles davor
   const nowB = heaviest(M.logs), beforeB = heaviest(S.logs.filter(l => l.startedAt < M.a));
@@ -1938,7 +1943,13 @@ window.addEventListener('popstate', () => {
   if (dlgCancel) { dlgCancel(); return; }
   if (ignorePop) { ignorePop = false; return; }
   if (sheetOpen) { hideSheet(); return; }
-  if (V.sub) { V.sub = (history.state && history.state.sub) || null; subDepth = Math.max(0, subDepth - 1); render(); scrollTo(0, 0); }
+  if (V.sub) {
+    // Nur eigene Einträge aus diesem Laden zählen – ältere (vor einem Neuladen) führen zurück zur Hauptseite
+    subDepth = Math.max(0, subDepth - 1);
+    V.sub = subDepth ? (history.state && history.state.sub) || null : null;
+    if (!V.sub && V.backTab) { V.tab = V.backTab; V.backTab = null; }
+    render(); scrollTo(0, 0);
+  }
 });
 let subDepth = 0;
 function openSub(id) { V.sub = id; subDepth++; history.pushState({ sub: id }, ''); render(); scrollTo(0, 0); }
@@ -2212,7 +2223,12 @@ const actions = {
   },
   openWeight() { V.tab = 'log'; openSub('weight'); },
   openExList() { openSub('ex'); },
-  openMonth(el) { if (V.tab !== 'log') selectTab('log'); openSub('month:' + el.dataset.k); },
+  openMonth(el) {
+    const from = V.tab;
+    if (from !== 'log') selectTab('log');
+    V.backTab = from !== 'log' ? from : null; // Zurück führt wieder dorthin
+    openSub('month:' + el.dataset.k);
+  },
   monthGo(el) { V.sub = 'month:' + el.dataset.k; history.replaceState({ sub: V.sub }, ''); render(); },
   openEx(el) { openSub('ex:' + el.dataset.name); },
   setTheme(el) { S.settings.theme = el.dataset.v; save(); applyTheme(); render(); },
@@ -2292,6 +2308,7 @@ function move(arr, id, d) {
 const TAB_ORDER = ['home', 'train', 'plan', 'log', 'more'];
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 function selectTab(t) {
+  V.backTab = null;
   if (sheetOpen) closeSheet();
   if (V.sub) { V.sub = null; const n = subDepth || 1; subDepth = 0; history.go(-n); }
   const dir = Math.sign(TAB_ORDER.indexOf(t) - TAB_ORDER.indexOf(V.tab)); // 1 = nach rechts
