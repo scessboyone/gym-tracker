@@ -263,6 +263,64 @@ function cleanPlan(p) {
     exercises: (Array.isArray(d.exercises) ? d.exercises : []).map(e => cleanEx(e)),
   })) };
 }
+// Gesamten Zustand prüfen (Backup laden, App-Start): nur erwartete Felder mit dem richtigen Typ,
+// damit aus einer fremden Backup-Datei nichts als HTML oder Skript in die Seite gelangt
+const optId = x => typeof x === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(x) ? x : undefined;
+const finite = (v, d = 0) => { const n = typeof v === 'number' ? v : num(v); return Number.isFinite(n) ? n : d; };
+const str = (v, max) => String(v == null ? '' : v).slice(0, max);
+const cleanSet = s => ({ weight: Math.max(0, finite(s && s.weight)), reps: int(s && s.reps, 0), done: !!(s && s.done === true) });
+const cleanSets = l => (Array.isArray(l) ? l : []).slice(0, 50).map(cleanSet);
+const cleanPr = p => ({ name: str(p && p.name, 80), weight: Math.max(0, finite(p && p.weight)), reps: int(p && p.reps, 0),
+  prevWeight: Math.max(0, finite(p && p.prevWeight)), prevReps: int(p && p.prevReps, 0) });
+function cleanLog(l) {
+  const startedAt = finite(l && l.startedAt, Date.now());
+  return { id: safeId(l && l.id), dayId: optId(l && l.dayId), dayName: str(l && l.dayName, 60), startedAt,
+    endedAt: Math.max(startedAt, finite(l && l.endedAt, startedAt)), note: str(l && l.note, 1000),
+    prs: (Array.isArray(l && l.prs) ? l.prs : []).map(cleanPr),
+    entries: (Array.isArray(l && l.entries) ? l.entries : []).map(e => ({ exId: optId(e && e.exId), baseId: optId(e && e.baseId), name: str(e && e.name, 80), sets: cleanSets(e && e.sets) })) };
+}
+function cleanActive(a) {
+  if (!a || typeof a !== 'object' || !Array.isArray(a.entries) || !a.entries.length) return null;
+  const entries = a.entries.map(e => {
+    const x = cleanEx({ name: e.name, image: e.image, dbId: e.image && e.image.type === 'db' ? String(e.image.value || '').split('/')[0] : null }, true);
+    return { exId: optId(e.exId), varId: optId(e.varId) || null, name: x.name, rest: int(e.rest, 90), image: x.image,
+      sets: cleanSets(e.sets), bumped: e.bumped === true, prShown: e.prShown === true, skipped: e.skipped === true };
+  });
+  const order = Array.isArray(a.order) && a.order.length === entries.length && a.order.every(i => Number.isInteger(i) && i >= 0 && i < entries.length) ? a.order : entries.map((_, i) => i);
+  return { id: safeId(a.id), dayId: optId(a.dayId), dayName: str(a.dayName, 60), startedAt: finite(a.startedAt, Date.now()), entries, order, pos: int(a.pos, 0) };
+}
+function cleanSettings(s) {
+  s = s && typeof s === 'object' ? s : {};
+  const o = { rest: int(s.rest, 90) };
+  if (['auto', 'light', 'dark'].includes(s.theme)) o.theme = s.theme;
+  if (ACCENTS.some(([k]) => k === s.accent)) o.accent = s.accent;
+  if (s.name != null) o.name = str(s.name, 30);
+  for (const k of ['since', 'lastBackup', 'goalKg']) if (s[k] != null && Number.isFinite(finite(s[k], NaN))) o[k] = finite(s[k]);
+  if (typeof s.seenVersion === 'string' && /^\d+(\.\d+){0,3}$/.test(s.seenVersion)) o.seenVersion = s.seenVersion;
+  for (const k of ['setupDone', 'driveOk']) if (s[k] === true) o[k] = true;
+  return o;
+}
+function cleanState(st) {
+  st = st && typeof st === 'object' ? st : {};
+  const cal = {};
+  for (const [k, v] of Object.entries(st.cal && typeof st.cal === 'object' ? st.cal : {})) {
+    if (/^\d{1,15}$/.test(k) && v && typeof v === 'object') cal[k] = { d: optId(v.d) || null, x: v.x === true };
+  }
+  return {
+    v: 1, plan: cleanPlan(st.plan),
+    logs: (Array.isArray(st.logs) ? st.logs : []).map(cleanLog).sort((a, b) => b.startedAt - a.startedAt),
+    body: (Array.isArray(st.body) ? st.body : []).map(p => {
+      const o = { t: finite(p && p.t), kg: Math.max(0, finite(p && p.kg)) };
+      if (p && typeof p.time === 'string' && /^\d{1,2}:\d{2}$/.test(p.time)) o.time = p.time;
+      return o;
+    }).filter(p => p.t > 0 && p.kg > 0).sort((a, b) => a.t - b.t),
+    active: cleanActive(st.active),
+    settings: cleanSettings(st.settings),
+    cal, sick: (Array.isArray(st.sick) ? st.sick : []).filter(t => Number.isFinite(t)),
+  };
+}
+// Bilder aus einem Backup: nur echte Bilddaten
+const safeImg = v => typeof v === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v);
 // Plan übernehmen (aus Link oder Datei) – ersetzt nur den Plan, Verlauf und laufendes Training bleiben
 async function adoptPlan(plan) {
   plan = cleanPlan(plan);
@@ -335,9 +393,11 @@ async function importData(file) {
     if (!await ask('Backup laden?', 'Alle aktuellen Daten auf diesem Gerät werden durch das Backup ersetzt.', 'Laden', true)) return;
     for (const k of await idb.keys()) if (String(k).startsWith('img:')) await idb.del(k);
     for (const k of Object.keys(localImgs)) delete localImgs[k];
-    for (const [k, v] of Object.entries(data.images || {})) { await idb.set(k, v); localImgs[k.slice(4)] = v; }
-    S = Object.assign({ settings: { rest: 90 }, logs: [], active: null }, data.state);
-    S.plan = cleanPlan(S.plan);
+    for (const [k, v] of Object.entries(data.images || {})) {
+      if (!/^img:[A-Za-z0-9_-]{1,40}$/.test(k) || !safeImg(v)) continue; // nur echte Bilder übernehmen
+      await idb.set(k, v); localImgs[k.slice(4)] = v;
+    }
+    S = cleanState(data.state);
     delete S.settings.wakeLock; delete S.settings.notify;
     await flush(); applyTheme(); render(); toast('Backup geladen');
   } catch (e) { toast('Import fehlgeschlagen: ' + e.message); }

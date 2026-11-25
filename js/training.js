@@ -101,7 +101,7 @@ function renderEntry(en, i) {
       ${en.sets.map((s, j) => `<div class="set-row ${s.done ? 'done' : ''}">
         <span class="set-no">${j + 1}</span>
         <input inputmode="decimal" enterkeyhint="next" data-field="weight" data-i="${i}" data-j="${j}" value="${fmtIn(s.weight)}" aria-label="Gewicht in kg">
-        <input inputmode="numeric" enterkeyhint="done" data-field="reps" data-i="${i}" data-j="${j}" value="${s.reps}" aria-label="Wiederholungen">
+        <input inputmode="numeric" enterkeyhint="done" data-field="reps" data-i="${i}" data-j="${j}" value="${int(s.reps, 0)}" aria-label="Wiederholungen">
         <button class="check" data-act="toggleSet" data-i="${i}" data-j="${j}" aria-label="Satz abhaken">${ICON.check}</button>
       </div>`).join('')}
     </div>
@@ -246,7 +246,7 @@ function celebrate(log) {
       </div>
       ${celebrateWeek()}
       ${prs.length ? `<div class="cel-prs"><div class="sub">${prs.length === 1 ? 'Neuer Rekord' : `${prs.length} neue Rekorde`}</div>
-        ${prs.map(p => `<div class="cel-pr"><span>${esc(p.name)}</span><b>${kgTxt(p.weight)} × ${p.reps}</b></div>`).join('')}</div>` : ''}
+        ${prs.map(p => `<div class="cel-pr"><span>${esc(p.name)}</span><b>${kgTxt(p.weight)} × ${int(p.reps, 0)}</b></div>`).join('')}</div>` : ''}
       <button class="btn primary block" id="celDone">Fertig</button>
     </div>`;
   document.body.appendChild(el);

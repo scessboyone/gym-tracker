@@ -26,7 +26,7 @@ function renderLog() {
   for (const l of V.allLogs ? S.logs : S.logs.slice(0, 3)) {
     const { sets, vol } = logStats(l);
     const pr = (l.prs || []).length;
-    h += `<button class="row" data-act="openLog" data-id="${l.id}"><div class="grow">
+    h += `<button class="row" data-act="openLog" data-id="${esc(l.id)}"><div class="grow">
       <div class="title">${esc(l.dayName)} <span class="muted" style="font-weight:400;margin-left:4px">${fmtDate(l.startedAt)}</span>${pr ? `<span class="pr" title="Rekorde">${pr} PR</span>` : ''}</div>
       <div class="sub">${fmtDur(l.endedAt - l.startedAt)} Dauer${SEP}${pl(sets, 'Satz', 'Sätze')}${SEP}${fmtNum(Math.round(vol))} kg bewegt</div>
       ${l.note ? `<div class="sub" style="font-style:italic">„${esc(l.note)}“</div>` : ''}</div>${ICON.chev}</button>`;
@@ -200,7 +200,7 @@ function renderExHist(name) {
     </div>
     <div class="card chart"><div class="sub" style="margin-bottom:8px">Schwerster Satz pro Training (kg)</div>${exerciseChart(name)}</div>
     <div class="section-title">Alle Trainings</div>
-    <div class="list">${hist.map(({ l, sets }) => `<button class="row" data-act="openLog" data-id="${l.id}"><div class="grow">
+    <div class="list">${hist.map(({ l, sets }) => `<button class="row" data-act="openLog" data-id="${esc(l.id)}"><div class="grow">
       <div class="title">${fmtDate(l.startedAt)} <span class="muted" style="font-weight:400;margin-left:4px">${esc(l.dayName)}</span>${prLogs.has(l.id) ? '<span class="pr">PR</span>' : ''}</div>
       <div class="sub">${esc(summarize(sets))}</div></div>${ICON.chev}</button>`).join('')}</div>`;
 }
@@ -391,7 +391,7 @@ function calDaySheet(t, mode = null) {
   }
   if (p.changed) btns.push(`<button class="btn ghost" data-act="calReset" data-t="${t}">Wie im Wochenplan${reg ? ' (' + esc(findDay(reg).name) + ')' : ' (frei)'}</button>`);
   setSheet(`${head(esc(dateLabel(t, true)))}
-    ${logs.length ? `<div class="section-title" style="margin-top:0">Trainiert</div><div class="list">${logs.map(l => `<button class="row" data-act="openLogFromCal" data-id="${l.id}"><div class="grow"><div class="title">${esc(l.dayName)}</div>
+    ${logs.length ? `<div class="section-title" style="margin-top:0">Trainiert</div><div class="list">${logs.map(l => `<button class="row" data-act="openLogFromCal" data-id="${esc(l.id)}"><div class="grow"><div class="title">${esc(l.dayName)}</div>
       <div class="sub">${fmtDur(l.endedAt - l.startedAt)} Dauer</div></div>${ICON.chev}</button>`).join('')}</div>` : ''}
     <div class="section-title"${logs.length ? '' : ' style="margin-top:0"'}>Geplant</div>
     <div class="card cal-plan">${planTxt}</div>
@@ -469,17 +469,17 @@ function openLog(id) {
   const l = S.logs.find(x => x.id === id);
   if (!l) return;
   V.logEdit = null;
-  setSheet(`<div class="sheet-bar"><button class="linkbtn" data-act="logEdit" data-id="${l.id}">${ICON.edit}Bearbeiten</button><button class="linkbtn" data-act="closeSheet">Fertig</button></div>
+  setSheet(`<div class="sheet-bar"><button class="linkbtn" data-act="logEdit" data-id="${esc(l.id)}">${ICON.edit}Bearbeiten</button><button class="linkbtn" data-act="closeSheet">Fertig</button></div>
     <div class="sheet-head"><h2>${esc(l.dayName)}</h2></div>
     <p class="sub">${fmtDate(l.startedAt)}${SEP}${fmtDur(l.endedAt - l.startedAt)} Dauer</p>
     ${l.note ? `<div class="card" style="font-style:italic">„${esc(l.note)}“</div>` : ''}
-    ${(l.prs || []).length ? `<div class="card"><b>Rekorde</b>${l.prs.map(p => `<div class="sub">${esc(p.name)}: ${kgTxt(p.weight)} × ${p.reps}</div>`).join('')}</div>` : ''}
+    ${(l.prs || []).length ? `<div class="card"><b>Rekorde</b>${l.prs.map(p => `<div class="sub">${esc(p.name)}: ${kgTxt(p.weight)} × ${int(p.reps, 0)}</div>`).join('')}</div>` : ''}
     <div class="list">${l.entries.map(e => {
       const d = e.sets.filter(s => s.done);
       return `<div class="row"><div class="grow"><div class="title">${esc(e.name)}</div>
         <div class="sub">${d.length ? esc(summarize(d)) : 'nicht gemacht'}</div></div></div>`;
     }).join('')}</div>
-    <button class="btn danger block" data-act="deleteLog" data-id="${l.id}">Training aus Verlauf löschen</button>`);
+    <button class="btn danger block" data-act="deleteLog" data-id="${esc(l.id)}">Training aus Verlauf löschen</button>`);
 }
 
 /* ----- Jahresrückblick: ab dem 20. Dezember freigeschaltet, ältere Jahre bleiben im Verlauf ----- */
@@ -573,8 +573,8 @@ function logEditSheet() {
       <div class="set-row hdr"><span>Satz</span><span>kg</span><span>Wdh.</span><span></span></div>
       ${e.sets.map((s, j) => `<div class="set-row ${s.done ? 'done' : ''}"><span class="set-no">${j + 1}</span>
         <input inputmode="decimal" data-le="weight" data-i="${i}" data-j="${j}" value="${fmtIn(s.weight)}" aria-label="Gewicht in kg, Satz ${j + 1}">
-        <input inputmode="numeric" data-le="reps" data-i="${i}" data-j="${j}" value="${s.reps}" aria-label="Wiederholungen, Satz ${j + 1}">
-        <button class="check" data-act="leToggle" data-i="${i}" data-j="${j}" aria-label="Satz ${s.done ? 'nicht gemacht' : 'gemacht'}" aria-pressed="${s.done}">${ICON.check}</button></div>`).join('')}
+        <input inputmode="numeric" data-le="reps" data-i="${i}" data-j="${j}" value="${int(s.reps, 0)}" aria-label="Wiederholungen, Satz ${j + 1}">
+        <button class="check" data-act="leToggle" data-i="${i}" data-j="${j}" aria-label="Satz ${s.done ? 'nicht gemacht' : 'gemacht'}" aria-pressed="${s.done === true}">${ICON.check}</button></div>`).join('')}
       <div class="ex-actions"><button class="btn small" data-act="leAddSet" data-i="${i}">+ Satz</button>
         <button class="btn small" data-act="leRemSet" data-i="${i}" ${e.sets.length ? '' : 'disabled'}>− Satz</button></div></div>`).join('')}
     <label class="field"><span>Notiz zum Training</span><textarea class="input" id="le-note" placeholder="optional">${esc(E.note || '')}</textarea></label>

@@ -196,7 +196,7 @@ darkMq.addEventListener('change', applyTheme);
   let saved = null;
   try {
     saved = await idb.get('state');
-    if (saved) S = Object.assign(S, saved, { settings: Object.assign({}, S.settings, saved.settings) });
+    if (saved) S = cleanState(Object.assign({}, saved, { settings: Object.assign({}, S.settings, saved.settings) }));
     // Erststart: leerer Plan zum selbst Eintragen (bestehende Daten bleiben unverändert)
     await flush();
     for (const k of await idb.keys()) if (String(k).startsWith('img:')) localImgs[k.slice(4)] = await idb.get(k);

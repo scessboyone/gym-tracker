@@ -149,7 +149,7 @@ function renderHome() {
     h += '<div class="section-title">Heute</div>';
     if (todayLogs.length) {
       h += todayLogs.map(l => { const { sets, vol } = logStats(l); const pr = (l.prs || []).length;
-        return `<button class="card home-done" data-act="openLog" data-id="${l.id}"><span style="color:var(--green)">${ICON.check}</span>
+        return `<button class="card home-done" data-act="openLog" data-id="${esc(l.id)}"><span style="color:var(--green)">${ICON.check}</span>
           <div class="grow"><b>${esc(l.dayName)} erledigt</b><div class="sub">${minTxt(l.endedAt - l.startedAt)}${SEP}${pl(sets, 'Satz', 'Sätze')}${SEP}${fmtNum(Math.round(vol))} kg bewegt${pr ? `<span class="pr">${pr} PR</span>` : ''}</div></div>${ICON.chev}</button>`; }).join('');
     } else if (todayD) {
       h += dayCard(todayD, 'Heute', true);
