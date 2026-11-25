@@ -7,10 +7,14 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.25.0';
+const APP_VERSION = '0.25.1';
 // Änderungen je Version (neueste zuerst). Nach einem Update zeigt die App nur, was seit der zuletzt gesehenen Version neu ist.
 // Neue Version: oben einen Eintrag { v: APP_VERSION, items: [...] } ergänzen.
 const CHANGELOG = [
+  { v: '0.25.1', items: [
+    'Training bearbeiten: Rekorde werden jetzt auch bei allen späteren Trainings richtig neu bewertet',
+    'Backup laden übernimmt Akzentfarbe und Hell/Dunkel sofort',
+  ] },
   { v: '0.25.0', items: [
     'Training nachträglich bearbeiten: Training im Verlauf antippen, oben auf „Bearbeiten“',
     'Die Abschluss-Feier zeigt jetzt auch Wochenziel und Serie',

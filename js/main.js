@@ -107,7 +107,7 @@ function swipeTarget(dx) {
 let sw = null;
 document.addEventListener('touchstart', e => {
   sw = null;
-  if (e.touches.length !== 1 || sheetOpen || $('#dlg')) return;
+  if (e.touches.length !== 1 || sheetOpen || $('#dlg') || $('#celebrate')) return;
   const t = e.touches[0];
   if (t.clientX < 24 || t.clientX > innerWidth - 24) return; // Rand frei lassen für die Zurück-Geste des Handys
   // Überall wischen, auch unter kurzem Inhalt (z. B. Plan) – nur nicht auf Leisten, Fenstern und Eingaben

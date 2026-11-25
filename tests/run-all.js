@@ -44,6 +44,10 @@ const run = (file, engine) => new Promise(resolve => {
   child.on('close', code => resolve({ file, engine, ok: code === 0, out, s: ((Date.now() - t0) / 1000).toFixed(0) }));
 });
 
+server.on('error', e => {
+  console.log(e.code === 'EADDRINUSE' ? `Port ${PORT} ist belegt – läuft noch ein Testserver? Bitte beenden und neu starten.` : 'Server-Fehler: ' + e.message);
+  process.exit(1);
+});
 server.listen(PORT, '127.0.0.1', async () => {
   const results = [];
   for (const engine of ENGINES) for (const [file, engines] of TESTS) {

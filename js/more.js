@@ -339,6 +339,6 @@ async function importData(file) {
     S = Object.assign({ settings: { rest: 90 }, logs: [], active: null }, data.state);
     S.plan = cleanPlan(S.plan);
     delete S.settings.wakeLock; delete S.settings.notify;
-    await flush(); render(); toast('Backup geladen');
+    await flush(); applyTheme(); render(); toast('Backup geladen');
   } catch (e) { toast('Import fehlgeschlagen: ' + e.message); }
 }

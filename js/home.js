@@ -28,7 +28,7 @@ function render() {
     : typeof V.sub === 'string' && V.sub.startsWith('ex:') ? renderExHist(V.sub.slice(3))
     : typeof V.sub === 'string' && V.sub.startsWith('month:') ? renderMonth(V.sub.slice(6))
     : typeof V.sub === 'string' && V.sub.startsWith('year:') ? renderYear(+V.sub.slice(5)) : renderLog();
-  else view.innerHTML = renderMore();
+  else { view.innerHTML = renderMore(); if (V.advOpen) queueMicrotask(fillAdvInfo); }
   tickElapsed();
 }
 

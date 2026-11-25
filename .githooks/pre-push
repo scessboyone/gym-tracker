@@ -11,6 +11,12 @@ SKILL="$HOME/.claude/skills/playwright-skill/run.js"
 if [ -z "$NODE" ]; then echo "pre-push: Node nicht gefunden – Tests übersprungen"; exit 0; fi
 if [ ! -f "$SKILL" ]; then echo "pre-push: Playwright-Skill nicht gefunden – Tests übersprungen"; exit 0; fi
 
+# Getestet wird der Arbeitsordner – er muss also genau dem hochgeladenen Stand entsprechen
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  echo "pre-push: Es gibt nicht eingecheckte Änderungen. Bitte erst committen oder stashen, damit genau der Upload getestet wird."
+  exit 1
+fi
+
 echo "pre-push: Tests laufen (Chrome + WebKit, ca. 4 Minuten) …"
 if "$NODE" "$SKILL" tests/run-all.js; then
   echo "pre-push: alle Tests grün – lade hoch"

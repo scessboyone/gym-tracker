@@ -195,8 +195,10 @@ const actions = {
     leRead();
     const E = V.logEdit, i = S.logs.findIndex(x => x.id === E.id);
     if (i < 0) { closeSheet(); return; }
-    E.prs = recomputePrs(E);
-    S.logs[i] = E; V.logEdit = null; save(); render(); openLog(E.id); toast('Training geändert');
+    S.logs[i] = E; V.logEdit = null;
+    // Das geänderte Training ist Vergleichswert für alle späteren: deren Rekorde ebenfalls neu bestimmen
+    for (const l of S.logs) if (l.startedAt >= E.startedAt) l.prs = recomputePrs(l);
+    save(); render(); openLog(E.id); toast('Training geändert');
   },
   calDay(el) { calDaySheet(+el.dataset.t); },
   calMove(el) { calDaySheet(+el.dataset.t, 'move'); },

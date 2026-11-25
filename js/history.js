@@ -598,7 +598,7 @@ function recomputePrs(log) {
     let prev = null;
     for (const l of S.logs) {
       if (l.id === log.id || l.startedAt >= log.startedAt) continue;
-      for (const x of l.entries) if (x.exId === e.exId || x.name === e.name) for (const s of x.sets)
+      for (const x of l.entries) if ((e.exId && x.exId === e.exId) || x.name === e.name) for (const s of x.sets)
         if (s.done && (!prev || s.weight > prev.weight || (s.weight === prev.weight && s.reps > prev.reps))) prev = s;
     }
     if (isPR(top, prev)) prs.push({ name: e.name, weight: top.weight, reps: top.reps, prevWeight: prev.weight, prevReps: prev.reps });

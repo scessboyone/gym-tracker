@@ -117,6 +117,31 @@ const fakeDate = (y, m, d) => `{ const RD = Date, off = new RD(${y}, ${m}, ${d},
     t(await page.locator('.adv-row').count() >= 10 && usage !== '…', `Erweiterte Informationen: aufgeklappt, Speicher „${usage}“`);
     await page.locator('details.adv').scrollIntoViewIfNeeded();
     await page.screenshot({ path: path.join(OUT, 'light-erweitert.png'), fullPage: true });
+    // Nach Bereichswechsel bleibt der Bereich offen und wird wieder gefüllt
+    await page.evaluate(() => { selectTab('home'); selectTab('more'); }); await page.waitForTimeout(600);
+    const usage2 = await page.locator('#adv-usage').innerText();
+    t(usage2 !== '…', `Erweiterte Informationen nach dem Zurückkommen wieder gefüllt („${usage2}“)`);
+
+    // Code-Review 0.25.1: Rekorde beim Bearbeiten (Übungen ohne ID, spätere Trainings)
+    const pr = await page.evaluate(() => {
+      const d = n => new Date(2026, 9, n, 18).getTime();
+      const mk = (id, t, name, w, prs = []) => ({ id, dayName: 'X', startedAt: t, endedAt: t + 3e6, prs, entries: [{ name, sets: [{ done: true, weight: w, reps: 10 }] }] });
+      S.logs = [mk('c', d(20), 'Bankdrücken', 80, [{ name: 'Bankdrücken', weight: 80, reps: 10 }]), mk('a', d(10), 'Bankdrücken', 60), mk('k', d(1), 'Kniebeuge', 100)];
+      V.logEdit = clone(S.logs[1]); V.logEdit.entries[0].sets[0].weight = 90;
+      actions.logEditSave(); closeSheet();
+      return { a: S.logs.find(l => l.id === 'a').prs.length, c: S.logs.find(l => l.id === 'c').prs.length };
+    });
+    t(pr.c === 0, 'Bearbeiten: späteres Training verliert sein „PR“, wenn das ältere jetzt schwerer ist');
+    t(pr.a === 0, 'Bearbeiten: Übungen ohne ID werden nicht mit anderen Übungen verglichen (erstes Bankdrücken ist kein Rekord)');
+
+    // Backup laden übernimmt die Akzentfarbe sofort
+    await page.evaluate(() => {
+      const data = { state: Object.assign(clone(S), { settings: Object.assign(clone(S.settings), { accent: 'pink', theme: 'dark' }) }) };
+      importData({ text: async () => JSON.stringify(data) }); // fragt nach – unten bestätigen
+    });
+    await page.locator('#dlg [data-dlg="1"]').click(); await page.waitForTimeout(800);
+    const acc = await page.evaluate(() => [document.documentElement.dataset.accent, document.documentElement.dataset.theme]);
+    t(acc[0] === 'pink' && acc[1] === 'dark', `Backup laden: Akzent und Darstellung sofort aktiv (${acc.join(', ')})`);
     await ctx.close();
   }
   t(!errors.length, 'keine JavaScript-Fehler' + (errors.length ? ': ' + errors.join(' | ') : ''));
