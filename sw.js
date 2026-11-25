@@ -1,10 +1,10 @@
 // Service Worker: macht die App offline-faehig.
 // Eigene Dateien: erst Netz (max. 3 s), sonst Cache -> Updates kommen automatisch.
 // Uebungsbilder/-datenbank: erst Cache, sonst Netz -> funktioniert im Gym ohne Empfang.
-const VERSION = 'v67';
+const VERSION = 'v68';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
-const FILES = ['./', 'index.html', 'style.css', 'js/boot.js', 'js/core.js', 'js/muscles.js', 'js/home.js', 'js/training.js', 'js/plan.js', 'js/history.js', 'js/weight.js', 'js/more.js', 'js/ui.js', 'js/actions.js', 'js/main.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
+const FILES = ['./', 'index.html', 'style.css', 'js/boot.js', 'js/core.js', 'js/muscles.js', 'js/home.js', 'js/training.js', 'js/plan.js', 'js/history.js', 'js/weight.js', 'js/more.js', 'js/ui.js', 'js/actions.js', 'js/main.js', 'data/anleitung-de.json', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(SHELL).then(c => c.addAll(FILES.map(f => new Request(f, { cache: 'reload' })))));
@@ -17,6 +17,16 @@ self.addEventListener('activate', e => {
       .then(keys => Promise.all(keys.filter(k => k.startsWith('shell-') && k !== SHELL).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
+});
+
+// Pausen-Benachrichtigung antippen: App wieder nach vorne holen (oder öffnen)
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const w of wins) if ('focus' in w) return w.focus();
+    return self.clients.openWindow('./');
+  })());
 });
 
 function timeout(ms) { return new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)); }

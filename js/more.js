@@ -8,6 +8,8 @@ window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); instal
 const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const CLOUD = IS_IOS ? 'iCloud' : 'Drive';
+// Pausen-Benachrichtigung: Android/PC (Web-Apps auf dem iPhone können das nur eingeschränkt)
+const CAN_NOTIFY = !IS_IOS && 'Notification' in window && 'serviceWorker' in navigator;
 const SHARE_IC = '<svg viewBox="0 0 24 24" style="width:16px;height:16px;vertical-align:-3px"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v10h14V11h-1"/></svg>';
 function installBanner() {
   if (isStandalone()) return '';
@@ -57,10 +59,14 @@ function renderMore() {
       <label class="toggle"><span>Dein Name (für die Begrüßung)</span>
         <input class="input" style="width:140px" data-field="name" value="${esc(S.settings.name || '')}" placeholder="Name" maxlength="30" autocomplete="given-name"></label>
     </div>
-    <div class="section-title">Training</div>
+    <div class="section-title">Training${infoBtn('rest')}</div>
     <div class="list">
-      <label class="toggle"><span>Standard-Pause für neue Übungen (Sekunden)</span>
+      <label class="toggle"><span>Pause zwischen den Sätzen (Sekunden)</span>
         <input class="input" style="width:90px;text-align:center" inputmode="numeric" data-field="defRest" value="${S.settings.rest}"></label>
+      <label class="toggle"><span>Pausen-Timer auch zwischen den Übungen</span>
+        <input type="checkbox" data-field="restBetween" ${S.settings.restBetween === false ? '' : 'checked'}></label>
+      ${CAN_NOTIFY ? `<label class="toggle"><span>Pausen-Timer als Benachrichtigung</span>
+        <input type="checkbox" data-field="restNotify" ${S.settings.restNotify && Notification.permission === 'granted' ? 'checked' : ''}></label>` : ''}
     </div>
     <div class="section-title">Backup<button class="info-btn" data-act="backupHelp" aria-label="Anleitung: Backup">${ICON.info}</button></div>
     <div class="list">
@@ -228,7 +234,8 @@ const unb64u = str => Uint8Array.from(atob(str.replace(/-/g, '+').replace(/_/g, 
 async function pipeBytes(bytes, stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
 function slimEx(e) {
   const o = { n: e.name, r: [e.repMin, e.repMax], w: e.weight };
-  if (e.sets) o.s = e.sets; if (e.rest != null) o.p = e.rest; if (e.note) o.t = e.note; if (e.dbId) o.d = e.dbId;
+  // Pausen werden nicht mitgeteilt: beim Empfänger gilt dessen eigene Pause-Einstellung
+  if (e.sets) o.s = e.sets; if (e.note) o.t = e.note; if (e.dbId) o.d = e.dbId;
   if (e.muscles && !e.dbId && !MUSCLES_BY_NAME[e.name]) o.m = e.muscles;
   if ((e.alts || []).length) o.a = e.alts.map(slimEx);
   return o;
@@ -236,7 +243,7 @@ function slimEx(e) {
 function fatEx(o, isAlt) {
   const e = { id: uid(), name: o.n || 'Übung', repMin: o.r[0], repMax: o.r[1], reps: o.r[0], weight: o.w || 0, note: o.t || '', dbId: o.d || null,
     image: o.d ? { type: 'db', value: o.d + '/0.jpg' } : null };
-  if (!isAlt) { e.sets = o.s || 3; e.rest = o.p ?? 90; }
+  if (!isAlt) { e.sets = o.s || 3; e.rest = null; } // Pause aus fremden Plänen ignorieren (ältere Links haben sie noch)
   if (o.m) e.muscles = o.m;
   if (o.a) e.alts = o.a.map(x => fatEx(x, true));
   return e;
@@ -280,7 +287,8 @@ function cleanEx(e, isAlt) {
       : img && img.type === 'url' && /^https?:\/\//.test(img.value) ? { type: 'url', value: img.value }
       : img && img.type === 'local' ? { type: 'local', value: safeId(img.value) } : null };
   if (e.muscles) o.muscles = { p: muscleList(e.muscles.p), s: muscleList(e.muscles.s) };
-  if (!isAlt) { o.sets = int(e.sets, 3, 1); o.rest = int(e.rest, 90); o.alts = (Array.isArray(e.alts) ? e.alts : []).map(a => cleanEx(a, true)); }
+  // rest = null: allgemeine Pause aus den Einstellungen; Zahl = eigene Pause nur für diese Übung
+  if (!isAlt) { o.sets = int(e.sets, 3, 1); o.rest = e.rest == null || e.rest === '' ? null : int(e.rest, null); o.alts = (Array.isArray(e.alts) ? e.alts : []).map(a => cleanEx(a, true)); }
   return o;
 }
 function cleanPlan(p) {
@@ -304,14 +312,17 @@ function cleanLog(l) {
   return { id: safeId(l && l.id), dayId: optId(l && l.dayId), dayName: str(l && l.dayName, 60), startedAt,
     endedAt: Math.max(startedAt, finite(l && l.endedAt, startedAt)), note: str(l && l.note, 1000),
     prs: (Array.isArray(l && l.prs) ? l.prs : []).map(cleanPr),
-    entries: (Array.isArray(l && l.entries) ? l.entries : []).map(e => ({ exId: optId(e && e.exId), baseId: optId(e && e.baseId), name: str(e && e.name, 80), sets: cleanSets(e && e.sets) })) };
+    ...(l && l.added === true ? { added: true } : {}), // nachgetragen
+    entries: (Array.isArray(l && l.entries) ? l.entries : []).map(e => ({ exId: optId(e && e.exId), baseId: optId(e && e.baseId), name: str(e && e.name, 80), sets: cleanSets(e && e.sets),
+      ...(e && typeof e.out === 'string' && e.out ? { out: str(e.out, 80) } : {}) })) }; // out = ausgelassen (Grund)
 }
 function cleanActive(a) {
   if (!a || typeof a !== 'object' || !Array.isArray(a.entries) || !a.entries.length) return null;
   const entries = a.entries.map(e => {
     const x = cleanEx({ name: e.name, image: e.image, dbId: e.image && e.image.type === 'db' ? String(e.image.value || '').split('/')[0] : null }, true);
-    return { exId: optId(e.exId), varId: optId(e.varId) || null, name: x.name, rest: int(e.rest, 90), image: x.image,
-      sets: cleanSets(e.sets), bumped: e.bumped === true, prShown: e.prShown === true, skipped: e.skipped === true };
+    return { exId: optId(e.exId), varId: optId(e.varId) || null, name: x.name, rest: e.rest == null ? null : int(e.rest, null), image: x.image,
+      sets: cleanSets(e.sets), bumped: e.bumped === true, prShown: e.prShown === true, skipped: e.skipped === true,
+      ...(typeof e.out === 'string' && e.out ? { out: str(e.out, 80) } : {}) };
   });
   const order = Array.isArray(a.order) && a.order.length === entries.length && a.order.every(i => Number.isInteger(i) && i >= 0 && i < entries.length) ? a.order : entries.map((_, i) => i);
   return { id: safeId(a.id), dayId: optId(a.dayId), dayName: str(a.dayName, 60), startedAt: finite(a.startedAt, Date.now()), entries, order, pos: int(a.pos, 0) };
@@ -324,7 +335,8 @@ function cleanSettings(s) {
   if (s.name != null) o.name = str(s.name, 30);
   for (const k of ['since', 'lastBackup', 'goalKg']) if (s[k] != null && Number.isFinite(finite(s[k], NaN))) o[k] = finite(s[k]);
   if (typeof s.seenVersion === 'string' && /^\d+(\.\d+){0,3}$/.test(s.seenVersion)) o.seenVersion = s.seenVersion;
-  for (const k of ['setupDone', 'driveOk']) if (s[k] === true) o[k] = true;
+  for (const k of ['setupDone', 'driveOk', 'restNotify', 'restFix']) if (s[k] === true) o[k] = true;
+  if (s.restBetween === false) o.restBetween = false; // Standard: Timer auch zwischen den Übungen
   return o;
 }
 function cleanState(st) {
@@ -346,11 +358,21 @@ function cleanState(st) {
     cal, sick: (Array.isArray(st.sick) ? st.sick : []).filter(t => Number.isFinite(t)),
   };
 }
+// Einmalig (1.1.0, auch nach dem Laden eines älteren Backups): Pausen pro Übung stammten aus importierten Plänen
+// bzw. alten Vorgaben – ab jetzt gilt die allgemeine Pause, eigene Pausen trägt man bei Bedarf selbst ein
+function migrateRest() {
+  if (S.settings.restFix) return;
+  for (const d of S.plan.days) for (const e of d.exercises) e.rest = null;
+  if (S.active) for (const en of S.active.entries) en.rest = null;
+  S.settings.restFix = true;
+}
 // Bilder aus einem Backup: nur echte Bilddaten
 const safeImg = v => typeof v === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v);
 // Plan übernehmen (aus Link oder Datei) – ersetzt nur den Plan, Verlauf und laufendes Training bleiben
 async function adoptPlan(plan) {
   plan = cleanPlan(plan);
+  // Pausen aus fremden Plänen nicht übernehmen – es gilt die eigene Einstellung unter Mehr → Training
+  for (const d of plan.days) for (const e of d.exercises) e.rest = null;
   const n = plan.days.length;
   const names = plan.days.map(d => d.name).join(', ');
   if (!await ask('Plan übernehmen?', `${n} Trainingstag${n === 1 ? '' : 'e'}: ${names}. ${S.plan.days.length ? 'Dein aktueller Plan wird ersetzt. ' : ''}Dein Verlauf bleibt erhalten.`, 'Übernehmen', !!S.plan.days.length)) return;
@@ -425,6 +447,7 @@ async function importData(file) {
       await idb.set(k, v); localImgs[k.slice(4)] = v;
     }
     S = cleanState(data.state);
+    migrateRest(); // Backup aus einer Version vor 1.1.0
     await flush(); applyTheme(); render(); toast('Backup geladen');
   } catch (e) { toast('Import fehlgeschlagen: ' + e.message); }
 }

@@ -150,6 +150,7 @@ document.addEventListener('click', e => {
     return;
   }
   if (e.target.id === 'backdrop') { closeSheet(); return; }
+  if (Date.now() - calClickBlock < 600 && e.target.closest('.cal')) return; // nach dem Ziehen kein Tipp auf den Tag
   const a = e.target.closest('[data-act]');
   if (a && actions[a.dataset.act]) { e.preventDefault(); actions[a.dataset.act](a, e); }
 });
@@ -168,10 +169,77 @@ document.addEventListener('input', e => {
     S.settings.rest = Math.max(0, Math.round(num(e.target.value))); save();
   }
 });
-document.addEventListener('change', e => {
+document.addEventListener('change', async e => {
   const f = e.target.dataset && e.target.dataset.field;
   if (f === 'importFile' && e.target.files[0]) { importData(e.target.files[0]); e.target.value = ''; }
+  else if (f === 'restBetween') { S.settings.restBetween = e.target.checked; save(); }
+  else if (f === 'restNotify') {
+    const box = e.target;
+    if (!box.checked) { restNote('close'); S.settings.restNotify = false; save(); return; }
+    let perm = Notification.permission;
+    if (perm === 'default') { try { perm = await Notification.requestPermission(); } catch { perm = 'denied'; } }
+    if (perm !== 'granted') {
+      box.checked = false; S.settings.restNotify = false; save();
+      toast('Benachrichtigungen sind gesperrt – in den Handy-Einstellungen für die App erlauben');
+      return;
+    }
+    S.settings.restNotify = true; save(); toast('Pause kommt als Benachrichtigung, wenn du die App verlässt');
+  }
 });
+// Kalender: geplanten Tag gedrückt halten (0,4 s) und auf einen anderen Tag ziehen = verschieben
+let cd = null, calClickBlock = 0;
+const calDropOk = (src, dst) => dst !== src && dst >= Math.min(dayStart(Date.now()), src) && !S.logs.some(l => dayStart(l.startedAt) === dst);
+function calGhost(x, y) { if (cd && cd.g) cd.g.style.transform = `translate(${x - 28}px, ${y - 64}px)`; }
+function calDragStart() {
+  if (!cd) return;
+  cd.on = true; sw = null; // nicht gleichzeitig zwischen Bereichen wischen
+  cd.el.classList.add('lift'); document.body.classList.add('cal-drag');
+  if (navigator.vibrate) navigator.vibrate(20);
+  const g = document.createElement('div');
+  g.id = 'cal-ghost'; g.className = 'glass'; g.textContent = shortName(planOn(cd.t).d) || 'Training';
+  document.body.appendChild(g); cd.g = g; calGhost(cd.x, cd.y);
+}
+function calDragEnd(drop) {
+  const c = cd; cd = null;
+  if (!c) return;
+  clearTimeout(c.timer);
+  if (!c.on) return;
+  calClickBlock = Date.now();
+  c.el.classList.remove('lift'); document.body.classList.remove('cal-drag');
+  if (c.over) c.over.classList.remove('drop');
+  if (c.g) c.g.remove();
+  if (!drop || !c.over) return;
+  const to = +c.over.dataset.t, p = planOn(c.t), d = p.d;
+  if (!d || !calDropOk(c.t, to)) return;
+  // Extra-Training bleibt Extra (zählt weiter nicht zum Wochenziel)
+  withUndo(`${findDay(d).name} → ${dateLabel(to)}`, () => { setPlan(c.t, null); setPlan(to, d, p.x); save(); });
+  render();
+}
+document.addEventListener('touchstart', e => {
+  if (cd) calDragEnd(false);
+  const c = e.touches.length === 1 && e.target.closest('.cal-d[data-drag]');
+  if (!c || sheetOpen) return;
+  const p = e.touches[0];
+  cd = { el: c, t: +c.dataset.t, x: p.clientX, y: p.clientY, on: false, over: null };
+  cd.timer = setTimeout(calDragStart, 400);
+}, { passive: true });
+document.addEventListener('touchmove', e => {
+  if (!cd) return;
+  const p = e.touches[0];
+  if (!cd.on) { if (Math.hypot(p.clientX - cd.x, p.clientY - cd.y) > 10) calDragEnd(false); return; } // normal scrollen
+  e.preventDefault();
+  calGhost(p.clientX, p.clientY);
+  const hit = document.elementFromPoint(p.clientX, p.clientY), tgt = hit && hit.closest('.cal-d[data-t]');
+  const ok = tgt && calDropOk(cd.t, +tgt.dataset.t) ? tgt : null;
+  if (ok !== cd.over) {
+    if (cd.over) cd.over.classList.remove('drop');
+    if (ok) { ok.classList.add('drop'); if (navigator.vibrate) navigator.vibrate(5); }
+    cd.over = ok;
+  }
+}, { passive: false });
+document.addEventListener('touchend', () => calDragEnd(true));
+document.addEventListener('touchcancel', () => calDragEnd(false));
+document.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('.cal-d')) e.preventDefault(); });
 // „Erweiterte Informationen“: auf/zu merken und Werte nachladen
 document.addEventListener('toggle', e => { if (e.target.matches && e.target.matches('details.adv')) { V.advOpen = e.target.open; if (e.target.open) fillAdvInfo(); } }, true);
 document.addEventListener('focusin', e => { if (e.target.matches('.set-row input')) setTimeout(() => e.target.select(), 0); });
@@ -202,6 +270,7 @@ darkMq.addEventListener('change', applyTheme);
     for (const k of await idb.keys()) if (String(k).startsWith('img:')) localImgs[k.slice(4)] = await idb.get(k);
   } catch (e) { toast('Speicher nicht verfügbar: ' + e.message); }
   applyTheme();
+  migrateRest();
   if (S.active && !(S.active.entries || []).length) S.active = null; // Training ohne Übungen (früherer Fehler)
   if (S.active) V.tab = 'train'; // laufendes Training: direkt wieder im Vollbild
   render();

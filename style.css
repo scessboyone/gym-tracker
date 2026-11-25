@@ -372,6 +372,47 @@ textarea.input { min-height: 72px; resize: vertical; }
 #timer button { background: var(--field); border-radius: 99px; padding: 8px 12px; font-size: 14px; font-weight: 700; }
 #timer.end b { color: var(--green); }
 
+/* Training minimiert: Leiste über der Tab-Leiste, antippen = zurück ins Training (ersetzt dort den Timer) */
+body.mini #timer { display: none; }
+body.mini main { padding-bottom: calc(var(--safe-b) + 220px); }
+#mini {
+  position: fixed; left: 12px; right: 12px; bottom: calc(var(--safe-b) + 92px); z-index: 30; max-width: 520px; margin: 0 auto;
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; border-radius: 22px; text-align: left;
+  box-shadow: 0 8px 32px var(--shadow); font: inherit; color: var(--text); font-variant-numeric: tabular-nums;
+}
+#mini[hidden] { display: none; }
+#mini .grow { display: flex; flex-direction: column; min-width: 0; }
+#mini .mini-t { font-weight: 700; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#mini .mini-s { color: var(--sub); font-size: 13px; }
+#mini .mini-s b { color: var(--text); font-family: var(--font-display); font-weight: 800; }
+#mini .mini-s b.ok { color: var(--green); }
+#mini .mini-go { display: inline-flex; align-items: center; color: var(--accent); font-weight: 700; font-size: 14px; }
+#mini .mini-go svg { width: 18px; height: 18px; }
+.mini-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green-fill); flex: none; }
+.mini-dot.run { background: var(--accent-fill); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .mini-dot.run { animation: none; } }
+
+/* Übung ausgelassen (z. B. Maschine kaputt) */
+.out-box { display: grid; gap: 2px; margin: 16px 0; padding: 14px 16px; border-radius: 16px; background: var(--orange-soft); color: var(--orange); }
+.out-box b { font-size: 17px; }
+.out-box span { color: var(--text); }
+.out-tag { color: var(--orange); font-weight: 600; }
+.steps .step.out i { background: var(--orange); }
+
+/* Kalender: Tag gedrückt halten und ziehen */
+.cal-d { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.cal-d.lift { opacity: .35; }
+.cal-d.drop { box-shadow: 0 0 0 3px var(--accent-fill) inset; background: var(--accent-soft); color: var(--text); }
+#cal-ghost {
+  position: fixed; left: 0; top: 0; z-index: 60; pointer-events: none; min-width: 56px; padding: 10px 12px; border-radius: 16px;
+  text-align: center; font-weight: 800; color: var(--accent); box-shadow: 0 12px 32px var(--shadow);
+}
+
+/* Fenster am Strich nach unten ziehen: größere Griff-Fläche */
+.grabber { position: relative; touch-action: none; }
+.grabber::before { content: ""; position: absolute; inset: -14px -80px -10px; }
+
 /* ---------- Diagramme ---------- */
 .chart svg { width: 100%; height: auto; display: block; }
 .chart .axis { stroke: var(--line); stroke-width: 1; }

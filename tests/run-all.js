@@ -20,6 +20,7 @@ const TESTS = [
   ['review-test.js', ['chromium', 'webkit']],
   ['accent-test.js', ['chromium', 'webkit']],
   ['features-test.js', ['chromium', 'webkit']],
+  ['v11-test.js', ['chromium', 'webkit']],
   ['security-test.js', ['chromium', 'webkit']],
   ['csp-test.js', ['chromium', 'webkit']],
   ['swipe-test.js', ['chromium']],

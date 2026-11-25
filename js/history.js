@@ -20,7 +20,9 @@ function renderLog() {
     ${reviewYears().length ? `<button class="row" data-act="openYear" data-y="${reviewYears()[0]}"><div class="grow"><div class="title">Jahresrückblick</div>
     <div class="sub">${reviewYears().join(', ')}</div></div>${ICON.chev}</button>` : ''}
     <button class="row" data-act="openExList"><div class="grow"><div class="title">Verlauf pro Übung</div>
-    <div class="sub">Alle Sätze, Bestwert und Kurve für jede Übung</div></div>${ICON.chev}</button></div>`;
+    <div class="sub">Alle Sätze, Bestwert und Kurve für jede Übung</div></div>${ICON.chev}</button>
+    ${S.plan.days.length ? `<button class="row" data-act="backfillPick"><div class="grow"><div class="title">Training nachtragen</div>
+    <div class="sub">Training vergessen einzutragen? Tag und Training wählen</div></div>${ICON.chev}</button>` : ''}</div>`;
   h += renderRecords();
   h += '<div class="section-title">Letzte Trainings</div><div class="list">';
   for (const l of V.allLogs ? S.logs : S.logs.slice(0, 3)) {
@@ -335,7 +337,9 @@ function renderWeek() {
     if (t === today) cls += ' today';
     if (t > today) cls += ' future';
     const lbl = p.d && !trained.has(t) && !sick.has(t) && t >= today ? `<small>${esc(shortName(p.d))}</small>` : '';
-    cells += `<button class="${cls}" data-act="calDay" data-t="${t}" aria-label="${fmtDate(t)}"><span>${new Date(t).getDate()}</span>${lbl}</button>`;
+    // Geplantes, noch nicht gemachtes Training: gedrückt halten und auf einen anderen Tag ziehen (main.js)
+    const drag = p.d && !trained.has(t) && !sick.has(t) ? ' data-drag="1"' : '';
+    cells += `<button class="${cls}" data-act="calDay" data-t="${t}"${drag} aria-label="${fmtDate(t)}"><span>${new Date(t).getDate()}</span>${lbl}</button>`;
   }
   const sickThisWeek = planned - req;
   return `<div class="card">
@@ -368,6 +372,13 @@ function calDaySheet(t, mode = null) {
         <div class="sub">${q.d ? 'Geplant: ' + esc(findDay(q.d).name) + ' – wird ersetzt' : 'frei'}</div></div>${ICON.chev}</button>`; }).join('')}</div>`);
     return;
   }
+  if (mode === 'log') {
+    const days = [...S.plan.days].sort((a, b) => (b.id === p.d) - (a.id === p.d)); // geplantes Training zuerst
+    setSheet(`${head('Training nachtragen', true)}
+      <p class="sub" style="margin-top:0">Welches Training hast du am ${esc(dateLabel(t, true))} gemacht? Danach kannst du Sätze, Gewichte und Uhrzeit anpassen.</p>
+      ${backfillList(days, t)}`);
+    return;
+  }
   if (mode === 'pick') {
     const extra = !p.d;
     setSheet(`${head(extra ? 'Extra-Training' : 'Anderes Training', true)}
@@ -396,8 +407,35 @@ function calDaySheet(t, mode = null) {
     <div class="section-title"${logs.length ? '' : ' style="margin-top:0"'}>Geplant</div>
     <div class="card cal-plan">${planTxt}</div>
     <div class="cal-btns">${btns.join('')}</div>
+    ${t <= today && S.plan.days.length && !(t === today && S.active) ? `<button class="btn block" data-act="calBackfill" data-t="${t}">Training nachtragen</button>` : ''}
     ${t <= today ? `<button class="btn block ${isSick ? '' : 'ghost'}" data-act="toggleSick" data-t="${t}">${isSick ? 'Krank-Markierung entfernen' : 'Als krank markieren'}</button>` : ''}
     ${t === today && p.d && !logs.length && !S.active ? `<button class="btn primary block" data-act="calStart" data-id="${p.d}">${esc(findDay(p.d).name)} jetzt starten</button>` : ''}`);
+}
+
+/* ----- Training nachtragen ----- */
+const backfillList = (days, t) => `<div class="list">${days.map(d => `<button class="row" data-act="backfill" data-id="${d.id}"${t != null ? ` data-t="${t}"` : ''}>
+  <div class="grow"><div class="title">${esc(d.name)}</div><div class="sub">${pl(d.exercises.length, 'Übung', 'Übungen')}</div></div>${ICON.chev}</button>`).join('')}</div>`;
+// Aus dem Verlauf: Datum frei wählen (bis heute), dann das Training
+function backfillSheet() {
+  const today = toIsoDate(Date.now()), yest = toIsoDate(addDays(dayStart(Date.now()), -1));
+  setSheet(`<div class="sheet-head"><h2>Training nachtragen</h2><button class="linkbtn" data-act="closeSheet">Abbrechen</button></div>
+    <label class="field"><span>Datum</span><input class="input" type="date" id="bf-date" max="${today}" value="${yest}"></label>
+    <div class="section-title">Welches Training?</div>
+    ${backfillList(S.plan.days, null)}
+    <p class="sub">Danach kannst du Sätze, Gewichte und Uhrzeit anpassen, bevor du sicherst.</p>`);
+}
+// Entwurf aus dem Plan: alle Sätze wie geplant als gemacht, Uhrzeit 18 Uhr (heute: gerade eben beendet)
+function backfillLog(t, dayId) {
+  const d = findDay(dayId);
+  if (!d) return null;
+  const sets = d.exercises.reduce((n, e) => n + (e.sets || 0), 0);
+  const dur = Math.max(20, Math.min(180, Math.round(sets * 2.5))) * 60000;
+  const six = new Date(t); six.setHours(18, 0, 0, 0); // auch an Tagen mit Zeitumstellung 18:00
+  let start = six.getTime();
+  if (start + dur > Date.now()) start = Math.max(t, Date.now() - dur);
+  return { id: uid(), dayId: d.id, dayName: d.name, startedAt: start, endedAt: start + dur, note: '', prs: [], added: true,
+    entries: d.exercises.map(e => ({ exId: e.id, baseId: e.id, name: e.name,
+      sets: Array.from({ length: Math.max(1, e.sets || 1) }, () => ({ weight: e.weight || 0, reps: e.reps || e.repMin || 0, done: true })) })) };
 }
 
 /* Körpergewicht */
@@ -471,13 +509,13 @@ function openLog(id) {
   V.logEdit = null;
   setSheet(`<div class="sheet-bar"><button class="linkbtn" data-act="logEdit" data-id="${esc(l.id)}">${ICON.edit}Bearbeiten</button><button class="linkbtn" data-act="closeSheet">Fertig</button></div>
     <div class="sheet-head"><h2>${esc(l.dayName)}</h2></div>
-    <p class="sub">${fmtDate(l.startedAt)}${SEP}${fmtDur(l.endedAt - l.startedAt)} Dauer</p>
+    <p class="sub">${fmtDate(l.startedAt)}${SEP}${fmtDur(l.endedAt - l.startedAt)} Dauer${l.added ? `${SEP}nachgetragen` : ''}</p>
     ${l.note ? `<div class="card" style="font-style:italic">„${esc(l.note)}“</div>` : ''}
     ${(l.prs || []).length ? `<div class="card"><b>Rekorde</b>${l.prs.map(p => `<div class="sub">${esc(p.name)}: ${kgTxt(p.weight)} × ${int(p.reps, 0)}</div>`).join('')}</div>` : ''}
     <div class="list">${l.entries.map(e => {
       const d = e.sets.filter(s => s.done);
       return `<div class="row"><div class="grow"><div class="title">${esc(e.name)}</div>
-        <div class="sub">${d.length ? esc(summarize(d)) : 'nicht gemacht'}</div></div></div>`;
+        <div class="sub">${d.length ? esc(summarize(d)) : e.out ? '' : 'nicht gemacht'}${e.out ? `${d.length ? SEP : ''}<span class="out-tag">ausgelassen: ${esc(e.out)}</span>` : ''}</div></div></div>`;
     }).join('')}</div>
     <button class="btn danger block" data-act="deleteLog" data-id="${esc(l.id)}">Training aus Verlauf löschen</button>`);
 }
@@ -565,11 +603,15 @@ function renderYear(y) {
 
 /* ----- Training nachträglich bearbeiten (Sätze, Gewichte, Wiederholungen, Notiz) ----- */
 function logEditSheet() {
-  const E = V.logEdit;
+  const E = V.logEdit, isNew = V.logEditNew;
   setSheet(`<div class="sheet-bar"><button class="linkbtn" data-act="logEditCancel">Abbrechen</button><button class="linkbtn strong" data-act="logEditSave">Sichern</button></div>
-    <div class="sheet-head"><h2>${esc(E.dayName)} bearbeiten</h2></div>
-    <p class="sub">${fmtDate(E.startedAt)}${SEP}${fmtDur(E.endedAt - E.startedAt)} Dauer</p>
-    ${E.entries.map((e, i) => `<div class="card le-ex"><div class="title">${esc(e.name)}</div>
+    <div class="sheet-head"><h2>${esc(E.dayName)} ${isNew ? 'nachtragen' : 'bearbeiten'}</h2></div>
+    <p class="sub">${esc(dateLabel(E.startedAt, true))}${isNew ? `${SEP}Haken = Satz gemacht` : ''}</p>
+    <div class="grid2">
+      <label class="field"><span>Beginn (Uhrzeit)</span><input class="input" type="time" id="le-time" value="${hhmm(E.startedAt)}"></label>
+      <label class="field"><span>Dauer (Minuten)</span><input class="input" inputmode="numeric" id="le-dur" value="${Math.max(1, Math.round((E.endedAt - E.startedAt) / 60000))}"></label>
+    </div>
+    ${E.entries.map((e, i) => `<div class="card le-ex"><div class="title">${esc(e.name)}${e.out ? ` <span class="out-tag">ausgelassen: ${esc(e.out)}</span>` : ''}</div>
       <div class="set-row hdr"><span>Satz</span><span>kg</span><span>Wdh.</span><span></span></div>
       ${e.sets.map((s, j) => `<div class="set-row ${s.done ? 'done' : ''}"><span class="set-no">${j + 1}</span>
         <input inputmode="decimal" data-le="weight" data-i="${i}" data-j="${j}" value="${fmtIn(s.weight)}" aria-label="Gewicht in kg, Satz ${j + 1}">
@@ -588,6 +630,15 @@ function leRead() {
     if (inp.dataset.le === 'weight') s.weight = Math.max(0, num(inp.value)); else s.reps = Math.max(0, Math.round(num(inp.value)));
   }
   const n = $('#le-note'); if (n) E.note = n.value.trim();
+  // Uhrzeit und Dauer (Datum bleibt): Beginn = Tagesbeginn + Uhrzeit
+  const ti = $('#le-time'), du = $('#le-dur');
+  const oldMin = Math.max(1, Math.round((E.endedAt - E.startedAt) / 60000));
+  if (ti && /^\d{1,2}:\d{2}$/.test(ti.value)) {
+    const [h, m] = ti.value.split(':').map(Number), d = new Date(E.startedAt);
+    d.setHours(h, m, 0, 0); E.startedAt = d.getTime();
+  }
+  const min = du ? Math.round(num(du.value)) : 0;
+  E.endedAt = E.startedAt + (min >= 1 && min <= 600 ? min : oldMin) * 60000;
 }
 // Rekorde dieses Trainings neu bestimmen: verglichen mit allen Trainings davor
 function recomputePrs(log) {

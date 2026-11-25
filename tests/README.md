@@ -21,6 +21,7 @@ WebKit einmalig installieren: im Skill-Ordner `npx playwright install webkit`.
 | `review-test.js` | Die 11 Fehler aus dem Code-Review vom 25.11. gezielt nachgestellt (leerer Tag, Plan-Link-Schutz, Rückgängig …) |
 | `accent-test.js` | Erster Start (Willkommens-Karte), Akzentfarbe wählen und behalten, heutiger Tag in der Akzentfarbe |
 | `features-test.js` | Pause beim ersten Start, Wochenziel in der Feier, Jahresrückblick (gefälschtes Datum), Training bearbeiten, Erweiterte Informationen |
+| `v11-test.js` | Neuerungen 1.1.0: allgemeine Pause zuerst, Plan-Import ohne Pausen, Timer zwischen Übungen aus, Leiste im minimierten Training, Übung auslassen, Training nachtragen, deutsche Anleitung, Pausen-Benachrichtigung; in Chrome zusätzlich Kalendertag ziehen und Fenster wegziehen (echte Touch-Gesten) |
 | `security-test.js` | Präparierte Backup-Datei führt nichts aus; normale Daten bleiben beim Bereinigen unverändert |
 | `csp-test.js` | Content-Security-Policy: keine Verstöße bei normaler Nutzung, eingeschleuster Code blockiert, Google-Anmeldeskript und Übungsdatenbank laden |
 | `offline-test.js` | Service Worker installiert sich, alle App-Dateien liegen im Cache, App startet offline |

@@ -30,6 +30,7 @@ function render() {
     : typeof V.sub === 'string' && V.sub.startsWith('year:') ? renderYear(+V.sub.slice(5)) : renderLog();
   else { view.innerHTML = renderMore(); if (V.advOpen) queueMicrotask(fillAdvInfo); }
   tickElapsed();
+  updateMini();
 }
 
 /* ----- Training: Übersicht ----- */

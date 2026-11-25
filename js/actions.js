@@ -18,7 +18,9 @@ const actions = {
     save(); rerenderEntry(i);
     if (!s.done) return;
     if (navigator.vibrate) navigator.vibrate(15);
-    startRest(en.rest);
+    // Kein Timer, wenn das ganze Training fertig ist – oder nach dem letzten Satz einer Übung, wenn das so eingestellt ist
+    const exDone = en.sets.every(x => x.done), allDone = S.active.entries.every(entryDone);
+    if (!allDone && !(exDone && S.settings.restBetween === false)) startRest(restFor(en)); else stopRest();
     // Rekord schon während des Trainings melden (einmal pro Übung)
     if (!en.prShown && isPR(s, bestSet(effId(en), en.name))) {
       en.prShown = true; save();
@@ -58,6 +60,25 @@ const actions = {
   },
   exGo(el) { goEx(+el.dataset.k); },
   minimize() { selectTab('home'); },
+  resume() { if (S.active) selectTab('train'); },
+  // Übung auslassen (z. B. Maschine kaputt): mit Grund im Training eintragen, weiter zur nächsten Übung
+  async exOut(el) {
+    const A = S.active, i = +el.dataset.i, en = A && A.entries[i];
+    if (!en) return;
+    const why = await askText('Übung auslassen?', { text: `${en.name} wird im Training als ausgelassen eingetragen. Grund (optional):`, value: 'Maschine kaputt', placeholder: 'z. B. Maschine kaputt', ok: 'Auslassen' });
+    if (why === null || S.active !== A) return;
+    en.out = why.trim().slice(0, 80) || 'Ausgelassen';
+    save(); // eine laufende Pause von der Übung davor läuft weiter
+    // weiter zur nächsten noch offenen Übung (sonst bleiben)
+    const k = A.order.findIndex((idx, k) => k > A.pos && !entryDone(A.entries[idx]));
+    if (k >= 0) goEx(k); else { render(); scrollTo(0, 0); }
+    toast(`${en.name}: ausgelassen`);
+  },
+  exIn(el) {
+    const en = S.active && S.active.entries[+el.dataset.i];
+    if (!en) return;
+    delete en.out; save(); render();
+  },
   exSkip() {
     const A = S.active; if (!A || A.pos >= A.order.length - 1) return;
     const [idx] = A.order.splice(A.pos, 1);
@@ -186,26 +207,46 @@ const actions = {
   },
 
   openLog(el) { openLog(el.dataset.id); },
-  logEdit(el) { const l = S.logs.find(x => x.id === el.dataset.id); if (!l) return; V.logEdit = clone(l); logEditSheet(); },
-  logEditCancel() { const id = V.logEdit && V.logEdit.id; V.logEdit = null; openLog(id); },
+  logEdit(el) { const l = S.logs.find(x => x.id === el.dataset.id); if (!l) return; V.logEdit = clone(l); V.logEditNew = false; V.logEditFrom = l.startedAt; logEditSheet(); },
+  logEditCancel() {
+    const id = V.logEdit && V.logEdit.id, isNew = V.logEditNew;
+    V.logEdit = null; V.logEditNew = false;
+    if (isNew) closeSheet(); else openLog(id);
+  },
   leToggle(el) { leRead(); const s = V.logEdit.entries[+el.dataset.i].sets[+el.dataset.j]; s.done = !s.done; logEditSheet(); },
   leAddSet(el) { leRead(); const e = V.logEdit.entries[+el.dataset.i], last = e.sets[e.sets.length - 1] || { weight: 0, reps: 10 }; e.sets.push({ weight: last.weight, reps: last.reps, done: true }); logEditSheet(); },
   leRemSet(el) { leRead(); V.logEdit.entries[+el.dataset.i].sets.pop(); logEditSheet(); },
   logEditSave() {
     leRead();
-    const E = V.logEdit, i = S.logs.findIndex(x => x.id === E.id);
-    if (i < 0) { closeSheet(); return; }
-    S.logs[i] = E; V.logEdit = null;
+    const E = V.logEdit, i = S.logs.findIndex(x => x.id === E.id), isNew = V.logEditNew;
+    if (E.startedAt > Date.now()) { toast('Die Uhrzeit liegt in der Zukunft'); return; }
+    if (isNew) S.logs.push(E);
+    else if (i < 0) { closeSheet(); return; } else S.logs[i] = E;
+    const from = isNew ? E.startedAt : Math.min(E.startedAt, V.logEditFrom || E.startedAt);
+    V.logEdit = null; V.logEditNew = false;
+    S.logs.sort((a, b) => b.startedAt - a.startedAt); // neueste zuerst (Uhrzeit kann sich geändert haben)
     // Das geänderte Training ist Vergleichswert für alle späteren: deren Rekorde ebenfalls neu bestimmen
-    for (const l of S.logs) if (l.startedAt >= E.startedAt) l.prs = recomputePrs(l);
-    save(); render(); openLog(E.id); toast('Training geändert');
+    for (const l of S.logs) if (l.startedAt >= from) l.prs = recomputePrs(l);
+    save(); render(); openLog(E.id); toast(isNew ? 'Training nachgetragen' : 'Training geändert');
+  },
+  // Training nachtragen: Tag wählen (Kalender oder Verlauf), dann wie „Bearbeiten“ anpassen und sichern
+  calBackfill(el) { calDaySheet(+el.dataset.t, 'log'); },
+  backfillPick() { backfillSheet(); },
+  backfill(el) {
+    let t = el.dataset.t ? +el.dataset.t : null;
+    if (t == null) { const v = $('#bf-date') && $('#bf-date').value; t = v ? dayStart(new Date(v + 'T12:00').getTime()) : NaN; }
+    if (!Number.isFinite(t) || t > dayStart(Date.now())) { toast('Bitte ein Datum bis heute wählen'); return; }
+    if (S.active && t === dayStart(Date.now())) { toast('Heute läuft schon ein Training – beende es einfach normal'); return; }
+    const log = backfillLog(t, el.dataset.id);
+    if (!log) return;
+    V.logEdit = log; V.logEditNew = true; logEditSheet();
   },
   calDay(el) { calDaySheet(+el.dataset.t); },
   calMove(el) { calDaySheet(+el.dataset.t, 'move'); },
   calPick(el) { calDaySheet(+el.dataset.t, 'pick'); },
   calMoveTo(el) {
-    const t = +el.dataset.t, to = +el.dataset.to, d = planOn(t).d;
-    setPlan(t, null); setPlan(to, d);
+    const t = +el.dataset.t, to = +el.dataset.to, p = planOn(t), d = p.d;
+    setPlan(t, null); setPlan(to, d, p.x); // Extra-Training bleibt Extra
     save(); closeSheet(); render();
     toast(`${findDay(d).name} → ${dateLabel(to)}`);
   },

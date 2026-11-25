@@ -20,7 +20,8 @@ const URL = process.env.TARGET_URL || 'http://127.0.0.1:8777/';
       { id: 'a', name: 'Push', weekdays: [0, 1, 2, 3, 4, 5, 6], exercises: [
         { id: 'b', name: 'Bankdrücken', sets: 2, repMin: 8, repMax: 12, reps: 8, weight: 1000, rest: 0, note: '',
           alts: [{ id: 'b2', name: 'Brustpresse', repMin: 8, repMax: 12, reps: 8, weight: 50, note: '' }] }] }] };
-    S.settings.seenVersion = APP_VERSION; await idb.set('state', S);
+    // restFix: Stand nach 1.1.0 – die 0 s sind eine selbst eingetragene Pause und bleiben
+    S.settings.seenVersion = APP_VERSION; S.settings.restFix = true; await idb.set('state', S);
   });
   await page.reload(); await w(500);
 
@@ -50,7 +51,7 @@ const URL = process.env.TARGET_URL || 'http://127.0.0.1:8777/';
   const st = await page.evaluate(() => ({ active: !!S.active, d: S.plan.days[0], e: S.plan.days[0].exercises[0] }));
   t(st.active, 'Plan übernehmen: laufendes Training bleibt');
   t(/^[A-Za-z0-9_-]+$/.test(st.d.id) && /^[A-Za-z0-9_-]+$/.test(st.e.id), 'Plan übernehmen: IDs sind bereinigt');
-  t(typeof st.e.repMin === 'number' && typeof st.e.sets === 'number' && typeof st.e.rest === 'number' && st.e.weight === 0, 'Plan übernehmen: Zahlen sind echte Zahlen');
+  t(typeof st.e.repMin === 'number' && typeof st.e.sets === 'number' && st.e.rest === null && st.e.weight === 0, 'Plan übernehmen: Zahlen sind echte Zahlen, Pause leer (= allgemeine Pause)');
   t(JSON.stringify(st.e.muscles.p) === '["chest"]' && JSON.stringify(st.d.weekdays) === '[0]', 'Plan übernehmen: nur bekannte Muskeln und Wochentage');
   await page.evaluate(() => { selectTab('plan'); openSub(S.plan.days[0].id); }); await w(300);
   await page.evaluate(() => editExSheet(S.plan.days[0].id, S.plan.days[0].exercises[0].id)); await w(400);

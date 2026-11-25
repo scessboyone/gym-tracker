@@ -3,10 +3,10 @@
 // Alle Dateien in js/ teilen sich den globalen Bereich; Reihenfolge siehe index.html.
 
 /* ---------- Pausen-Timer ---------- */
-const T = { end: 0, total: 0, iv: null };
+const T = { end: 0, total: 0, iv: null, endedAt: 0, noteAt: 0 };
 function startRest(sec) {
   if (!sec) return;
-  T.total = sec; T.end = Date.now() + sec * 1000;
+  T.total = sec; T.end = Date.now() + sec * 1000; T.endedAt = 0; T.noteAt = 0;
   clearInterval(T.iv); T.iv = setInterval(tickRest, 250);
   tickRest();
 }
@@ -18,9 +18,11 @@ function tickRest() {
     el.classList.add('end');
     el.dataset.mode = 'end';
     el.innerHTML = '<span class="lbl">Pause vorbei</span><b>Los!</b><button data-act="tStop">OK</button>';
-    clearInterval(T.iv); T.iv = null;
+    clearInterval(T.iv); T.iv = null; T.endedAt = Date.now();
     if (navigator.vibrate) navigator.vibrate([300, 120, 300]);
-    setTimeout(() => { if (!T.iv) el.hidden = true; }, 6000);
+    if (document.hidden) restNote('end');
+    setTimeout(() => { if (!T.iv) el.hidden = true; updateMini(); }, 6000);
+    updateMini();
     return;
   }
   el.classList.remove('end');
@@ -29,13 +31,54 @@ function tickRest() {
     el.innerHTML = '<span class="lbl">Pause</span><b></b><button data-act="tAdd" data-d="-15">−15 s</button><button data-act="tAdd" data-d="15">+15 s</button><button data-act="tStop" aria-label="Pause beenden">✕</button>';
   }
   el.querySelector('b').textContent = fmtDur(left * 1000);
+  // App im Hintergrund: Restzeit in der Benachrichtigung ab und zu auffrischen (still, ohne erneuten Ton)
+  if (document.hidden && Date.now() - T.noteAt > 15000) restNote('run');
+  updateMini();
 }
-function stopRest() { clearInterval(T.iv); T.iv = null; const el = $('#timer'); el.hidden = true; el.dataset.mode = ''; }
+function stopRest() { clearInterval(T.iv); T.iv = null; T.endedAt = 0; const el = $('#timer'); el.hidden = true; el.dataset.mode = ''; restNote('close'); updateMini(); }
+
+/* ----- Pausen-Timer als Benachrichtigung (Android): nur solange die App im Hintergrund ist ----- */
+const notifyOn = () => CAN_NOTIFY && S.settings.restNotify && Notification.permission === 'granted';
+const clock = t => new Date(t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+async function restNote(kind) {
+  if (!notifyOn()) return;
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (!reg) return;
+    if (kind === 'close') { (await reg.getNotifications({ tag: 'rest' })).forEach(n => n.close()); return; }
+    const opt = { tag: 'rest', icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', lang: 'de' };
+    if (kind === 'run') {
+      T.noteAt = Date.now();
+      const left = Math.max(0, Math.ceil((T.end - Date.now()) / 1000));
+      // Endzeit im Titel: stimmt auch dann, wenn Android die App im Hintergrund anhält und die Restzeit nicht mehr auffrischt
+      await reg.showNotification(`Pause bis ${clock(T.end)} Uhr`, { ...opt, body: `Noch ${fmtDur(left * 1000)} – antippen, um zurückzukehren`, silent: true, renotify: false });
+    } else {
+      const A = S.active, en = A && A.entries[A.order ? A.order[A.pos] : 0];
+      await reg.showNotification('Pause vorbei – los!', { ...opt, body: en ? `Weiter mit ${en.name}` : 'Zeit für den nächsten Satz', renotify: true, vibrate: [300, 120, 300] });
+    }
+  } catch { /* Benachrichtigungen nicht möglich – Timer in der App läuft trotzdem */ }
+}
 
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') { if (T.iv) tickRest(); }
-  else flush();
+  if (document.visibilityState === 'visible') { if (T.iv) tickRest(); restNote('close'); }
+  else { flush(); if (T.iv) restNote('run'); }
 });
+
+/* ----- Training minimiert: Leiste unten mit Pause bzw. Trainingszeit, antippen = zurück ins Training ----- */
+function updateMini() {
+  const m = $('#mini');
+  if (!m) return; // alte index.html aus dem Offline-Speicher mit neuem Skript: einfach ohne Leiste
+  const show = !!S.active && !inFocus();
+  document.body.classList.toggle('mini', show);
+  m.hidden = !show;
+  if (!show) return;
+  const run = !!T.iv, ended = !run && T.endedAt && Date.now() - T.endedAt < 6000;
+  const state = run ? `Pause <b>${fmtDur(Math.max(0, Math.ceil((T.end - Date.now()) / 1000)) * 1000)}</b>`
+    : ended ? '<b class="ok">Pause vorbei – los!</b>' : `läuft seit <b>${fmtDur(Date.now() - S.active.startedAt)}</b>`;
+  const html = `<span class="mini-dot${run ? ' run' : ''}" aria-hidden="true"></span><span class="grow"><span class="mini-t">${esc(S.active.dayName)}</span><span class="mini-s">${state}</span></span><span class="mini-go">Zurück${ICON.chev}</span>`;
+  if (m.dataset.html !== html) { m.innerHTML = html; m.dataset.html = html; }
+  m.setAttribute('aria-label', `Zurück zum Training ${S.active.dayName}`);
+}
 
 /* ---------- Sheet + Zurück-Taste ---------- */
 let sheetOpen = false, ignorePop = false;
@@ -100,7 +143,52 @@ function openSheet(html) {
 function setSheet(html) {
   if (sheetOpen) $('#sheet').innerHTML = '<div class="grabber"></div>' + html; else openSheet(html);
 }
-function hideSheet() { $('#sheet').hidden = true; $('#backdrop').hidden = true; sheetOpen = false; D = null; }
+function hideSheet() {
+  const sh = $('#sheet'), bd = $('#backdrop');
+  sh.hidden = true; bd.hidden = true; sheetOpen = false; D = null;
+  sh.style.transform = sh.style.transition = sh.style.animation = ''; bd.style.opacity = bd.style.transition = '';
+  updateMini();
+}
+/* Fenster nach unten wegziehen: am Strich/Kopf jederzeit, im Inhalt nur, wenn er ganz oben steht */
+(function sheetDrag() {
+  const sh = $('#sheet'), bd = $('#backdrop');
+  let d = null;
+  const spring = 'transform .28s cubic-bezier(.3, 1.2, .5, 1)';
+  sh.addEventListener('touchstart', e => {
+    d = null;
+    if (e.touches.length !== 1 || e.target.closest('input, textarea, select, .results, .bwsvg, .chart svg')) return;
+    const handle = !!e.target.closest('.grabber, .sheet-head, .sheet-bar');
+    if (!handle && sh.scrollTop > 0) return;
+    d = { y0: e.touches[0].clientY, x0: e.touches[0].clientX, t0: Date.now(), dy: 0, on: false };
+  }, { passive: true });
+  sh.addEventListener('touchmove', e => {
+    if (!d) return;
+    const p = e.touches[0], dy = p.clientY - d.y0, dx = p.clientX - d.x0;
+    if (!d.on) {
+      if (Math.abs(dy) < 8 && Math.abs(dx) < 8) return;
+      if (dy <= 0 || Math.abs(dx) > Math.abs(dy) || sh.scrollTop > 0) { d = null; return; } // normal scrollen
+      d.on = true; d.y0 = p.clientY; sh.style.animation = 'none'; sh.style.transition = 'none';
+    }
+    e.preventDefault();
+    d.dy = Math.max(0, p.clientY - d.y0);
+    sh.style.transform = `translateY(${d.dy}px)`;
+    bd.style.opacity = String(Math.max(0.2, 1 - d.dy / (sh.offsetHeight || 1)));
+  }, { passive: false });
+  const end = () => {
+    const x = d; d = null;
+    if (!x || !x.on) return;
+    const fast = x.dy / Math.max(1, Date.now() - x.t0) > 0.6;
+    if (x.dy > Math.min(140, sh.offsetHeight * 0.3) || (fast && x.dy > 40)) {
+      sh.style.transition = 'transform .2s ease-in'; sh.style.transform = 'translateY(100%)';
+      bd.style.transition = 'opacity .2s'; bd.style.opacity = '0';
+      setTimeout(() => { if (sheetOpen) closeSheet(); else hideSheet(); }, 190);
+    } else {
+      sh.style.transition = spring; sh.style.transform = ''; bd.style.transition = 'opacity .2s'; bd.style.opacity = '';
+    }
+  };
+  sh.addEventListener('touchend', end);
+  sh.addEventListener('touchcancel', end);
+})();
 function closeSheet() { if (!sheetOpen) return; hideSheet(); ignorePop = true; history.back(); }
 window.addEventListener('popstate', () => {
   if (dlgAfterPop) { dlgAfterPop(); return; }

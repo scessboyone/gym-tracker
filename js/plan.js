@@ -28,7 +28,7 @@ function renderDayEditor(d) {
       <button class="grow" style="display:flex;gap:12px;align-items:center;text-align:left" data-act="editEx" data-id="${e.id}">
         ${exThumb(e)}
         <div style="min-width:0"><div class="title">${esc(e.name)}</div>
-        <div class="sub">${e.sets} × ${repTxt(e)} Wdh.${SEP}${kgTxt(e.weight)}${SEP}<span class="nw">${e.rest} s Pause</span></div>
+        <div class="sub">${e.sets} × ${repTxt(e)} Wdh.${SEP}${kgTxt(e.weight)}${SEP}<span class="nw">${e.rest != null ? `${e.rest} s Pause` : 'Standard-Pause'}</span></div>
         ${(e.alts || []).length ? `<div class="sub">Alternativen: ${e.alts.map(a => esc(a.name)).join(', ')}</div>` : ''}</div></button>
       <button class="iconbtn" data-act="moveEx" data-id="${e.id}" data-d="-1" ${k === 0 ? 'disabled' : ''} aria-label="Nach oben">${ICON.up}</button>
       <button class="iconbtn" data-act="moveEx" data-id="${e.id}" data-d="1" ${k === d.exercises.length - 1 ? 'disabled' : ''} aria-label="Nach unten">${ICON.down}</button>
@@ -44,7 +44,7 @@ const cur = () => (D.alt == null ? D.ex : D.ex.alts[D.alt]);
 function editExSheet(dayId, exId) {
   const day = findDay(dayId);
   const src = exId ? day.exercises.find(e => e.id === exId) : null;
-  D = { dayId, isNew: !src, alt: null, ex: src ? clone(src) : { id: uid(), name: '', sets: 3, repMin: 10, repMax: 12, reps: 10, weight: 0, rest: S.settings.rest, note: '', dbId: null, image: null } };
+  D = { dayId, isNew: !src, alt: null, ex: src ? clone(src) : { id: uid(), name: '', sets: 3, repMin: 10, repMax: 12, reps: 10, weight: 0, rest: null, note: '', dbId: null, image: null } };
   if (D.ex.repMin == null) { D.ex.repMin = D.ex.reps; D.ex.repMax = D.ex.reps; }
   D.ex.alts = D.ex.alts || [];
   drawExSheet();
@@ -62,7 +62,7 @@ function drawExSheet() {
       <label class="field"><span>Wdh. bis</span><input class="input" id="f-rmax" inputmode="numeric" value="${e.repMax}"></label>
       ${main ? `<label class="field"><span>Sätze</span><input class="input" id="f-sets" inputmode="numeric" value="${e.sets}"></label>` : ''}
       <label class="field"><span>Gewicht (kg, 0 = ohne)</span><input class="input" id="f-weight" inputmode="decimal" value="${fmtIn(e.weight)}"></label>
-      ${main ? `<label class="field"><span>Pause (Sekunden)</span><input class="input" id="f-rest" inputmode="numeric" value="${e.rest}"></label>` : ''}
+      ${main ? `<label class="field"><span>Eigene Pause (Sek., leer = Standard)</span><input class="input" id="f-rest" inputmode="numeric" value="${e.rest ?? ''}" placeholder="Standard: ${int(S.settings.rest, 90)} s"></label>` : ''}
     </div>
     <label class="field"><span>Notiz / Einstellungen (z. B. Sitzhöhe, Stufe, Griff)</span><textarea class="input" id="f-note" placeholder="z. B. Sitz Stufe 5, Polster auf 3">${esc(e.note)}</textarea></label>
     <div class="section-title">Muskeln${infoBtn('muscleEdit')}</div>
@@ -126,7 +126,8 @@ function readDraftFields() {
   e.note = $('#f-note').value.trim();
   if (main) {
     e.sets = Math.max(1, Math.round(num($('#f-sets').value)) || 1);
-    e.rest = Math.max(0, Math.round(num($('#f-rest').value)));
+    const r = $('#f-rest').value.trim();
+    e.rest = r === '' ? null : Math.max(0, Math.round(num(r))); // leer = allgemeine Pause aus den Einstellungen
   }
 }
 async function openDbSearch() {

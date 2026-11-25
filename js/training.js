@@ -21,7 +21,8 @@ function summarize(sets) {
 }
 function workoutCounts() {
   let done = 0, total = 0;
-  for (const en of S.active.entries) for (const s of en.sets) { total++; if (s.done) done++; }
+  // Ausgelassene Übungen (z. B. Maschine kaputt) zählen nur mit ihren schon gemachten Sätzen
+  for (const en of S.active.entries) for (const s of en.sets) { if (s.done) { done++; total++; } else if (!en.out) total++; }
   return { done, total };
 }
 // Reihenfolge der Übungen im laufenden Training (Überspringen schiebt eine Übung ans Ende)
@@ -29,7 +30,7 @@ function ensureOrder(A) {
   if (!Array.isArray(A.order) || A.order.length !== A.entries.length) A.order = A.entries.map((_, i) => i);
   A.pos = Math.min(Math.max(0, A.pos || 0), A.order.length - 1);
 }
-const entryDone = en => en.sets.length > 0 && en.sets.every(s => s.done);
+const entryDone = en => !!en.out || (en.sets.length > 0 && en.sets.every(s => s.done));
 function workoutHead() {
   const A = S.active;
   const { done, total } = workoutCounts();
@@ -38,10 +39,10 @@ function workoutHead() {
   return `<section class="wk-head" id="wk-head">
     <div class="wk-meta"><span class="wk-title">${esc(A.dayName)}</span><span>${done} / ${total} Sätze<b id="elapsed">${fmtDur(Date.now() - A.startedAt)}</b></span></div>
     <div class="steps" role="tablist" aria-label="Übungen">${A.order.map((idx, k) => {
-      const e = A.entries[idx], d = e.sets.filter(x => x.done).length, pct = e.sets.length ? (d / e.sets.length) * 100 : 0;
-      return `<button class="step${k === A.pos ? ' on' : ''}${entryDone(e) ? ' done' : ''}" data-act="exGo" data-k="${k}" role="tab" aria-selected="${k === A.pos}" aria-label="${esc(e.name)}"><i style="width:${pct}%"></i></button>`;
+      const e = A.entries[idx], d = e.sets.filter(x => x.done).length, pct = e.out ? 100 : e.sets.length ? (d / e.sets.length) * 100 : 0;
+      return `<button class="step${k === A.pos ? ' on' : ''}${entryDone(e) ? ' done' : ''}${e.out ? ' out' : ''}" data-act="exGo" data-k="${k}" role="tab" aria-selected="${k === A.pos}" aria-label="${esc(e.name)}"><i style="width:${pct}%"></i></button>`;
     }).join('')}</div>
-    <div class="wk-step">Übung ${A.pos + 1} von ${n}${en.skipped && !entryDone(en) ? '<span class="sep" aria-hidden="true"></span>übersprungen, jetzt nachholen' : next ? `<span class="sep" aria-hidden="true"></span>danach ${esc(next)}` : ''}</div>
+    <div class="wk-step">Übung ${A.pos + 1} von ${n}${en.out ? '<span class="sep" aria-hidden="true"></span>ausgelassen' : en.skipped && !entryDone(en) ? '<span class="sep" aria-hidden="true"></span>übersprungen, jetzt nachholen' : next ? `<span class="sep" aria-hidden="true"></span>danach ${esc(next)}` : ''}</div>
   </section>`;
 }
 function renderWorkout() {
@@ -52,10 +53,11 @@ function renderWorkout() {
     return '<div class="empty"><b>Keine Übungen</b>Dieses Training hat keine Übungen.</div><button class="btn block" data-act="cancelWorkout">Training verwerfen</button>';
   }
   setTop('', `<button class="linkbtn" data-act="minimize" aria-label="Training minimieren">${ICON.down}Minimieren</button>`, '<button class="linkbtn" data-act="finish">Beenden</button>');
-  const i = A.order[A.pos], last = A.pos === A.order.length - 1;
+  const i = A.order[A.pos], last = A.pos === A.order.length - 1, out = !!A.entries[i].out;
   return `${workoutHead()}
     ${renderEntry(A.entries[i], i)}
-    ${last ? '' : '<button class="btn ghost block" data-act="exSkip">Übung überspringen und später machen</button>'}
+    ${last || out ? '' : '<button class="btn ghost block" data-act="exSkip">Übung überspringen und später machen</button>'}
+    ${out ? '' : `<button class="btn ghost block" data-act="exOut" data-i="${i}">Übung auslassen (z. B. Maschine kaputt)</button>`}
     <button class="btn ghost block" data-act="cancelWorkout">Training verwerfen</button>
     <div class="wk-nav glass">
       <button class="btn" data-act="exPrev" ${A.pos === 0 ? 'disabled' : ''}>${ICON.back}Zurück</button>
@@ -78,6 +80,14 @@ function renderEntry(en, i) {
   const target = pe ? `Ziel: ${sets} × ${repTxt(pe)} Wdh.` : '';
   const levelUp = pe && pe.repMax && lastSets && lastSets.length >= sets && lastSets.every(s => s.reps >= pe.repMax);
   const variants = base && (base.alts || []).length ? [base, ...base.alts] : null;
+  // Ausgelassen (z. B. Maschine kaputt): Grund zeigen, Sätze ausblenden, „Doch machen“ holt sie zurück
+  if (en.out) return `<article class="card ex ex-focus ex-out" id="en-${i}">
+    <div class="ex-title"><h2 class="ex-name">${esc(en.name)}</h2></div>
+    <div class="out-box"><b>Ausgelassen</b><span>${esc(en.out)}</span>
+      ${en.sets.some(s => s.done) ? `<span class="sub">${pl(en.sets.filter(s => s.done).length, 'Satz', 'Sätze')} davor gemacht – bleiben gespeichert</span>` : ''}</div>
+    ${variants ? '<p class="sub">Tipp: Statt auslassen kannst du nach „Doch machen“ mit dem Pfeil-Knopf zur Alternative wechseln.</p>' : ''}
+    <button class="btn block" data-act="exIn" data-i="${i}">Doch machen</button>
+  </article>`;
   return `<article class="card ex ex-focus ${allDone ? 'done' : ''}" id="en-${i}">
     <div class="ex-title">
       <h2 class="ex-name">${esc(en.name)}</h2>
@@ -146,6 +156,7 @@ function rerenderEntry(i) {
 function tickElapsed() {
   const el = $('#elapsed');
   if (el && S.active) el.textContent = fmtDur(Date.now() - S.active.startedAt);
+  if (S.active && !T.iv) updateMini(); // Trainingszeit in der Leiste (während der Pause zählt tickRest)
 }
 setInterval(tickElapsed, 1000);
 
@@ -164,7 +175,7 @@ function startWorkout(dayId) {
       }
       const v = (varId && findEx(varId)) || e;
       return {
-        exId: e.id, varId, name: v.name, rest: e.rest ?? S.settings.rest, image: v.image,
+        exId: e.id, varId, name: v.name, rest: e.rest ?? null, image: v.image, // null = allgemeine Pause (restFor)
         sets: Array.from({ length: Math.max(1, e.sets) }, () => ({ weight: v.weight, reps: v.reps || v.repMin, done: false })),
       };
     }),
@@ -195,7 +206,8 @@ function finishWorkout(apply, note) {
   }
   // exId = tatsächlich gemachte Variante, baseId = Hauptübung im Plan
   const log = { id: A.id, dayId: A.dayId, dayName: A.dayName, startedAt: A.startedAt, endedAt: Date.now(), note: note || '', prs,
-    entries: A.entries.map(e => ({ exId: effId(e), baseId: e.exId, name: e.name, sets: e.sets.map(s => ({ weight: s.weight, reps: s.reps, done: s.done })) })) };
+    entries: A.entries.map(e => ({ exId: effId(e), baseId: e.exId, name: e.name, sets: e.sets.map(s => ({ weight: s.weight, reps: s.reps, done: s.done })),
+      ...(e.out ? { out: e.out } : {}) })) };
   S.logs.unshift(log);
   if (apply) {
     for (const en of A.entries) {
@@ -309,11 +321,25 @@ async function exInfo(i) {
       <div style="margin-top:4px">${pe.note ? esc(pe.note) : '<span class="muted">Noch keine – tippe im Training auf ✎</span>'}</div></div>
     <div id="instr" class="sub">${dbId ? 'Anleitung wird geladen …' : ''}</div>`);
   if (dbId) {
-    try {
-      const db = await loadExDb();
-      const e = db.find(x => x.id === dbId);
-      const box = $('#instr');
-      if (box && e) box.innerHTML = `<div class="section-title">Anleitung (Englisch)</div><ol class="instr">${e.instructions.map(t => `<li>${esc(t)}</li>`).join('')}</ol>`;
-    } catch { const box = $('#instr'); if (box) box.textContent = 'Anleitung offline nicht verfügbar.'; }
+    // Erst die deutsche Übersetzung (liegt in der App, auch offline), sonst das englische Original
+    const de = await loadInstrDe().then(m => m[dbId]).catch(() => null);
+    let steps = Array.isArray(de) && de.some(Boolean) ? de.filter(Boolean) : null, isEn = false, offline = false;
+    if (!steps) {
+      try { const e = (await loadExDb()).find(x => x.id === dbId); if (e) { steps = e.instructions; isEn = true; } } catch { offline = true; }
+    }
+    const box = $('#instr');
+    if (!box) return;
+    if (steps && steps.length) box.innerHTML = `<div class="section-title">Anleitung${isEn ? ' (Englisch)' : ''}</div><ol class="instr">${steps.map(t => `<li>${esc(t)}</li>`).join('')}</ol>`;
+    else box.textContent = offline ? 'Anleitung offline nicht verfügbar.' : 'Für diese Übung gibt es keine Anleitung.';
   }
+}
+// Deutsche Übungsanleitungen (übersetzt aus free-exercise-db): { id: [Schritt, …] }
+let INSTR_DE = null;
+async function loadInstrDe() {
+  if (INSTR_DE) return INSTR_DE;
+  const r = await fetch('data/anleitung-de.json');
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const o = await r.json();
+  INSTR_DE = o && typeof o === 'object' ? o : {};
+  return INSTR_DE;
 }

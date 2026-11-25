@@ -7,10 +7,21 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '1.0.1';
+const APP_VERSION = '1.1.0';
 // Änderungen je Version (neueste zuerst). Nach einem Update zeigt die App nur, was seit der zuletzt gesehenen Version neu ist.
 // Neue Version: oben einen Eintrag { v: APP_VERSION, items: [...] } ergänzen.
 const CHANGELOG = [
+  { v: '1.1.0', items: [
+    'Pause: Es gilt immer deine Pause unter Mehr → Training. Eine eigene Pause pro Übung trägst du nur noch bei Bedarf selbst ein (Plan → Übung). Pausen aus importierten Plänen wurden zurückgesetzt',
+    'Mehr → Training: Pausen-Timer zwischen den Übungen an- oder ausschalten',
+    'Android: Pausen-Timer als Benachrichtigung, wenn du die App verlässt (Mehr → Training)',
+    'Training minimiert: Unten bleibt eine Leiste mit Pause und Trainingszeit – antippen bringt dich zurück ins Training',
+    'Übung auslassen, z. B. wenn eine Maschine kaputt ist – wird mit Grund im Training eingetragen',
+    'Training nachtragen: im Kalender auf einen vergangenen Tag tippen oder unter Verlauf → „Training nachtragen“',
+    'Kalender: geplanten Tag gedrückt halten und auf einen anderen Tag ziehen, um ihn zu verschieben',
+    'Fenster lassen sich am Strich oben nach unten wegziehen',
+    'Übungsanleitungen auf Deutsch',
+  ] },
   { v: '1.0.1', items: [
     'Backup-Anleitung: i-Knopf bei „Backup“ unter Mehr, umschaltbar zwischen iPhone und Android',
   ] },
@@ -166,7 +177,7 @@ const ICON = {
 
 // Kurze Erklärungen hinter dem i-Knopf (statt Text direkt auf der Seite)
 const INFO = {
-  week: { t: 'Kalender und Serie', x: 'Tippe auf einen Tag, um ein Training zu verschieben, ausfallen zu lassen, ein Extra-Training einzuplanen oder dich krank zu melden.\nSerie: Wochen am Stück, in denen du alle geplanten Trainings geschafft hast. Krank-Tage zählen nicht dagegen.' },
+  week: { t: 'Kalender und Serie', x: 'Tippe auf einen Tag, um ein Training zu verschieben, ausfallen zu lassen, ein Extra-Training einzuplanen, nachzutragen oder dich krank zu melden.\nSchneller verschieben: geplanten Tag gedrückt halten und auf einen anderen Tag ziehen.\nSerie: Wochen am Stück, in denen du alle geplanten Trainings geschafft hast. Krank-Tage zählen nicht dagegen.' },
   heat: { t: 'Muskeln', x: 'Die Farbe zeigt, wie viele Sätze ein Muskel bekommen hat. Hauptmuskel zählt ganz, Hilfsmuskel halb.\nPro Woche: unter 6 Sätze wenig, 6 bis unter 12 mittel, ab 12 viel. Bei 4 Wochen gilt das Vierfache.' },
   sets: { t: 'Sätze pro Muskel', x: 'Jeder erledigte Satz zählt für den Hauptmuskel der Übung ganz und für jeden Hilfsmuskel halb.' },
   missing: { t: 'Noch nicht dran', x: 'Muskeln aus deinem Plan, die im gewählten Zeitraum noch keinen Satz bekommen haben, mit einer passenden Übung aus deinem Plan.' },
@@ -174,7 +185,11 @@ const INFO = {
   muscleEdit: { t: 'Muskeln festlegen', x: 'Muskel antippen: 1× Hauptmuskel (kräftig), 2× Hilfsmuskel (hell), 3× aus.' },
   alts: { t: 'Alternativen', x: 'Zum Beispiel Maschine statt Kurzhanteln, falls etwas besetzt ist. Im Training schaltest du mit dem Pfeil-Knopf neben dem Übungsnamen um.\nSätze und Pause gelten wie bei der Hauptübung, Gewicht, Verlauf und Rekorde werden getrennt geführt.' },
   theme: { t: 'Darstellung', x: 'Automatisch folgt der Hell- oder Dunkel-Einstellung deines Handys.' },
+  rest: { t: 'Pause', x: 'Die Pause hier gilt für alle Übungen. Braucht eine Übung eine andere Pause, trag sie unter Plan → Übung → „Eigene Pause“ ein. Leer lassen = diese Pause.\nZwischen den Übungen aus: Nach dem letzten Satz einer Übung startet kein Timer.\nBenachrichtigung (Android): Verlässt du die App während der Pause, zeigt das Handy, bis wann die Pause geht, und meldet sich am Ende. Hält Android die App bei gesperrtem Bildschirm an, kann die Meldung am Ende etwas später kommen – die Uhrzeit in der Benachrichtigung stimmt aber immer.' },
 };
+// Pause einer Übung im Training: eigene Pause aus dem Plan, sonst die allgemeine Einstellung
+// (aus dem aktuellen Plan gelesen, damit Änderungen auch im laufenden Training sofort gelten)
+function restFor(en) { const b = findEx(en.exId); return (b ? b.rest : en.rest) ?? S.settings.rest; }
 // Akzentfarben (Werte in style.css); Grün fehlt absichtlich, weil Grün „erledigt“ bedeutet
 const ACCENTS = [['blue', 'Blau'], ['teal', 'Türkis'], ['indigo', 'Indigo'], ['purple', 'Lila'], ['pink', 'Pink'], ['red', 'Rot'], ['graphite', 'Graphit']];
 const accentPicker = () => `<div class="acc-row" role="radiogroup" aria-label="Akzentfarbe">${ACCENTS.map(([v, l]) => {

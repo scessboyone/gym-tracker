@@ -1,15 +1,21 @@
 # Gym Tracker
 
-Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gym-tracker/ – **Version 1.0.0** (25.11.2026)
+Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gym-tracker/ – **Version 1.1.0** (25.11.2026)
 
 ## Funktionen
 - Home (Start-Tab): Begrüßung mit Namen, was heute ansteht (inkl. „Bereit zum Steigern“), Woche, Gewicht mit Schnell-Eintrag, letztes Training
 - Training im Vollbild, eine Übung pro Seite (große Muskel-Grafik, wischen wechselt die Übung, Weiter/Zurück, Fortschrittsbalken, Übung überspringen → kommt am Ende nochmal), Sätze abhaken, Wiederholungen/Gewichte anpassen, Pausen-Timer, Auto-Scroll, Rekorde (PR)
 - Progression: „Ziel geschafft – um wie viel erhöhen?“
+- Pause: eine allgemeine Pause (Mehr → Training) gilt für alle Übungen, eigene Pause pro Übung nur bei Bedarf; Timer zwischen den Übungen abschaltbar; Android: Pause als Benachrichtigung, wenn man die App verlässt
+- Training minimiert: Leiste über der Tab-Leiste mit Pause/Trainingszeit, antippen = zurück ins Training
+- Übung auslassen (z. B. Maschine kaputt) mit Grund, steht danach im Verlauf
+- Training nachtragen (Kalender-Tag oder Verlauf → „Training nachtragen“), Uhrzeit und Dauer änderbar
+- Übungsanleitungen auf Deutsch (`data/anleitung-de.json`, übersetzt aus free-exercise-db)
+- Fenster (Sheets) am Strich oben nach unten wegziehen
 - Alternativen pro Übung (⇄-Knopf), Notizen/Einstellungen pro Übung (✎ antippen)
 - Muskelmodell statt Fotos (Haupt-/Hilfsmuskeln)
 - Plan-Editor mit Live-Suche in der Übungsdatenbank, „Eigene Übung“ immer möglich
-- Kalender: Trainings verschieben, tauschen, ausfallen lassen, Extra-Training, krank melden; Wochenziel + Serie
+- Kalender: Trainings verschieben (auch per Gedrückthalten und Ziehen), tauschen, ausfallen lassen, Extra-Training, krank melden; Wochenziel + Serie
 - Verlauf pro Übung (eigene Seite): alle Sätze, Bestwert, Kurve
 - Monatsrückblick: Trainings, Zeit, kg, Rekorde, Fortschritte, Muskeln und Gewicht pro Monat, Vergleich zum Vormonat
 - Jahresrückblick: ab 20. Dezember als Widget auf Home (bis 31.12.), danach dauerhaft unter Verlauf
