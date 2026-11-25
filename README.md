@@ -1,6 +1,6 @@
 # Gym Tracker
 
-Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gym-tracker/
+Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gym-tracker/ – **Version 1.0.0** (25.11.2026)
 
 ## Funktionen
 - Home (Start-Tab): Begrüßung mit Namen, was heute ansteht (inkl. „Bereit zum Steigern“), Woche, Gewicht mit Schnell-Eintrag, letztes Training
@@ -28,7 +28,7 @@ Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gy
 
 ## Technik
 - Reines HTML/CSS/JS ohne Build-Schritt, gehostet über GitHub Pages
-- Daten nur auf dem Gerät (IndexedDB). Backup: Tab „Mehr“ → „In Drive sichern“ bzw. als Datei
+- Daten nur auf dem Gerät (IndexedDB). Backup: Mehr → „In Google Drive sichern“ (Android/PC, ein Tipp, nur Recht `drive.file`), iPhone über „In Dateien sichern“ (iCloud), oder als Datei
 - Offline-fähig über Service Worker (`sw.js`)
 - Content-Security-Policy im `<head>` von `index.html`: Skripte nur von der App und von Googles Anmeldung (`accounts.google.com/gsi/`); keine Inline-Skripte (Hell/Dunkel vor dem Zeichnen: `js/boot.js`). Neue externe Quellen dort eintragen
 - Bei jeder Änderung `VERSION` in `sw.js` und `APP_VERSION` in `js/core.js` hochzählen
@@ -59,5 +59,6 @@ Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gy
 - Übungsdaten: [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (Unlicense)
 - Muskelmodell: react-body-highlighter (MIT), siehe `THIRD_PARTY.md`
 
-## Offen
-- Echter Ein-Tipp-Backup nach Google Drive (Google-Cloud-OAuth einrichten)
+## Ideen für später
+- Freiwilliges Backup-Passwort (Backups verschlüsselt, AES-256)
+- Aufwärmsätze, Schwierigkeit pro Satz, Stillstand-Hinweis, freies Training ohne Plan, Körpermaße

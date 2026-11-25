@@ -7,10 +7,13 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.27.0';
+const APP_VERSION = '1.0.0';
 // Änderungen je Version (neueste zuerst). Nach einem Update zeigt die App nur, was seit der zuletzt gesehenen Version neu ist.
 // Neue Version: oben einen Eintrag { v: APP_VERSION, items: [...] } ergänzen.
 const CHANGELOG = [
+  { v: '1.0.0', items: [
+    'Version 1.0 – die App ist fertig für den Alltag: Training, Verlauf, Rückblicke, Backup in Google Drive und iCloud',
+  ] },
   { v: '0.27.0', items: [
     'Neu: Backup mit einem Tipp direkt in Google Drive (Mehr → „In Google Drive sichern“) – beim ersten Mal einmal mit Google anmelden',
   ] },
