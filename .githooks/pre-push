@@ -1,0 +1,20 @@
+#!/bin/sh
+# Vor jedem Hochladen (git push) alle Tests laufen lassen – Chrome wie am Pixel und WebKit wie Safari am iPhone.
+# Schlägt ein Test fehl, wird nichts hochgeladen. Eingerichtet mit: git config core.hooksPath .githooks
+# Braucht Node und den Claude-Skill „playwright-skill“. Fehlt eins davon, wird nur gewarnt und trotzdem hochgeladen.
+
+NODE="$(command -v node 2>/dev/null)"
+[ -z "$NODE" ] && [ -x "$LOCALAPPDATA/Programs/nodejs/node.exe" ] && NODE="$LOCALAPPDATA/Programs/nodejs/node.exe"
+[ -z "$NODE" ] && [ -x "/c/Users/$USERNAME/AppData/Local/Programs/nodejs/node.exe" ] && NODE="/c/Users/$USERNAME/AppData/Local/Programs/nodejs/node.exe"
+SKILL="$HOME/.claude/skills/playwright-skill/run.js"
+
+if [ -z "$NODE" ]; then echo "pre-push: Node nicht gefunden – Tests übersprungen"; exit 0; fi
+if [ ! -f "$SKILL" ]; then echo "pre-push: Playwright-Skill nicht gefunden – Tests übersprungen"; exit 0; fi
+
+echo "pre-push: Tests laufen (Chrome + WebKit, ca. 4 Minuten) …"
+if "$NODE" "$SKILL" tests/run-all.js; then
+  echo "pre-push: alle Tests grün – lade hoch"
+else
+  echo "pre-push: Tests fehlgeschlagen – nichts hochgeladen"
+  exit 1
+fi

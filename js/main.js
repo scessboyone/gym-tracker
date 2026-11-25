@@ -172,6 +172,8 @@ document.addEventListener('change', e => {
   const f = e.target.dataset && e.target.dataset.field;
   if (f === 'importFile' && e.target.files[0]) { importData(e.target.files[0]); e.target.value = ''; }
 });
+// „Erweiterte Informationen“: auf/zu merken und Werte nachladen
+document.addEventListener('toggle', e => { if (e.target.matches && e.target.matches('details.adv')) { V.advOpen = e.target.open; if (e.target.open) fillAdvInfo(); } }, true);
 document.addEventListener('focusin', e => { if (e.target.matches('.set-row input')) setTimeout(() => e.target.select(), 0); });
 
 /* ---------- Hell / Dunkel ---------- */

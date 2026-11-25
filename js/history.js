@@ -17,6 +17,8 @@ function renderLog() {
   const mk = monthKey(Date.now()), mc = monthStats(mk).logs.length;
   h += `<div class="list"><button class="row" data-act="openMonth" data-k="${mk}"><div class="grow"><div class="title">Monatsrückblick</div>
     <div class="sub">${MONTHS[new Date().getMonth()]}: ${pl(mc, 'Training', 'Trainings')}${SEP}Rekorde, Fortschritte, Muskeln</div></div>${ICON.chev}</button>
+    ${reviewYears().length ? `<button class="row" data-act="openYear" data-y="${reviewYears()[0]}"><div class="grow"><div class="title">Jahresrückblick</div>
+    <div class="sub">${reviewYears().join(', ')}</div></div>${ICON.chev}</button>` : ''}
     <button class="row" data-act="openExList"><div class="grow"><div class="title">Verlauf pro Übung</div>
     <div class="sub">Alle Sätze, Bestwert und Kurve für jede Übung</div></div>${ICON.chev}</button></div>`;
   h += renderRecords();
@@ -466,7 +468,9 @@ function lineChart(pts) {
 function openLog(id) {
   const l = S.logs.find(x => x.id === id);
   if (!l) return;
-  setSheet(`<div class="sheet-head"><h2>${esc(l.dayName)}</h2><button class="linkbtn" data-act="closeSheet">Fertig</button></div>
+  V.logEdit = null;
+  setSheet(`<div class="sheet-bar"><button class="linkbtn" data-act="logEdit" data-id="${l.id}">${ICON.edit}Bearbeiten</button><button class="linkbtn" data-act="closeSheet">Fertig</button></div>
+    <div class="sheet-head"><h2>${esc(l.dayName)}</h2></div>
     <p class="sub">${fmtDate(l.startedAt)}${SEP}${fmtDur(l.endedAt - l.startedAt)} Dauer</p>
     ${l.note ? `<div class="card" style="font-style:italic">„${esc(l.note)}“</div>` : ''}
     ${(l.prs || []).length ? `<div class="card"><b>Rekorde</b>${l.prs.map(p => `<div class="sub">${esc(p.name)}: ${kgTxt(p.weight)} × ${p.reps}</div>`).join('')}</div>` : ''}
@@ -476,4 +480,128 @@ function openLog(id) {
         <div class="sub">${d.length ? esc(summarize(d)) : 'nicht gemacht'}</div></div></div>`;
     }).join('')}</div>
     <button class="btn danger block" data-act="deleteLog" data-id="${l.id}">Training aus Verlauf löschen</button>`);
+}
+
+/* ----- Jahresrückblick: ab dem 20. Dezember freigeschaltet, ältere Jahre bleiben im Verlauf ----- */
+const yearUnlocked = y => { const d = new Date(), cy = d.getFullYear(); return y < cy || (y === cy && d.getMonth() === 11 && d.getDate() >= 20); };
+const inYear = (l, y) => new Date(l.startedAt).getFullYear() === y;
+// Jahre mit Trainings, die schon freigeschaltet sind (neueste zuerst)
+function reviewYears() {
+  const ys = new Set(S.logs.map(l => new Date(l.startedAt).getFullYear()));
+  return [...ys].filter(yearUnlocked).sort((a, b) => b - a);
+}
+// Home-Widget nur vom 20. bis 31. Dezember
+const yearWidgetDue = () => { const d = new Date(); return d.getMonth() === 11 && d.getDate() >= 20 && S.logs.some(l => inYear(l, d.getFullYear())); };
+function yearStats(y) {
+  const logs = S.logs.filter(l => inYear(l, y));
+  let sets = 0, vol = 0, dur = 0;
+  for (const l of logs) { const x = logStats(l); sets += x.sets; vol += x.vol; dur += l.endedAt - l.startedAt; }
+  return { logs, sets, vol, dur, prs: logs.reduce((n, l) => n + (l.prs || []).length, 0) };
+}
+const tons = v => `${fmtNum(Math.round(v / 100) / 10)} t`;
+function renderYear(y) {
+  setTop('Jahresrückblick', `<button class="linkbtn" data-act="back">${ICON.back}${V.backTab === 'home' ? 'Home' : 'Verlauf'}</button>`);
+  const years = reviewYears();
+  if (!years.includes(y)) return '<div class="empty"><b>Noch nicht freigeschaltet</b>Der Jahresrückblick erscheint am 20. Dezember.</div>';
+  const i = years.indexOf(y), Y = yearStats(y), P = yearStats(y - 1);
+  const nav = `<div class="card m-nav">
+    <button class="iconbtn" data-act="yearGo" data-y="${years[i + 1] || ''}" ${years[i + 1] ? '' : 'disabled'} aria-label="Voriges Jahr">${ICON.back}</button>
+    <h2>${y}</h2>
+    <button class="iconbtn" data-act="yearGo" data-y="${years[i - 1] || ''}" ${years[i - 1] ? '' : 'disabled'} aria-label="Nächstes Jahr">${ICON.chev}</button></div>`;
+  const cmp = (now, before, unit) => P.logs.length ? `<div class="m-cmp ${now > before ? 'up' : ''}">${diffTxt(Math.round(now - before))}${unit}</div>` : '';
+  const dVol = Math.round((Y.vol - P.vol) / 100) / 10;
+  const stats = `<div class="card m-stats">
+    ${P.logs.length ? `<div class="m-vs sub">Vergleich mit ${y - 1}</div>` : ''}
+    <div><div class="big">${Y.logs.length}</div><div class="sub">${Y.logs.length === 1 ? 'Training' : 'Trainings'}</div>${cmp(Y.logs.length, P.logs.length, ' Trainings')}</div>
+    <div><div class="big">${Math.round(Y.dur / 36e5)}<small> h</small></div><div class="sub">Trainingszeit</div>${cmp(Y.dur / 36e5, P.dur / 36e5, ' h')}</div>
+    <div><div class="big">${fmtNum(Y.sets)}</div><div class="sub">Sätze</div>${cmp(Y.sets, P.sets, ' Sätze')}</div>
+    <div><div class="big">${tons(Y.vol).replace(/ t$/, '<small> t</small>')}</div><div class="sub">bewegt</div>${P.logs.length ? `<div class="m-cmp ${dVol > 0 ? 'up' : ''}">${diffTxt(dVol, ' t')}</div>` : ''}</div>
+  </div>`;
+  // Trainings pro Monat als Balken
+  const per = Array(12).fill(0);
+  for (const l of Y.logs) per[new Date(l.startedAt).getMonth()]++;
+  const max = Math.max(1, ...per), best = per.indexOf(Math.max(...per));
+  const chart = `<div class="section-title">Trainings pro Monat</div><div class="card"><div class="y-bars" role="img" aria-label="Trainings pro Monat ${y}">${per.map((n, m) =>
+    `<div class="y-bar${m === best && n ? ' best' : ''}"><b>${n || ''}</b><i style="height:${Math.round((n / max) * 100)}%"></i><span>${MONTHS[m].slice(0, 1)}</span></div>`).join('')}</div>
+    ${per[best] ? `<p class="sub" style="margin:10px 0 0">Stärkster Monat: ${MONTHS[best]} mit ${pl(per[best], 'Training', 'Trainings')}</p>` : ''}</div>`;
+  // Fortschritte: schwerster Satz beim ersten Mal im Jahr gegen den besten im Jahr
+  const firstB = new Map(), bestB = heaviest(Y.logs);
+  for (const l of [...Y.logs].reverse()) for (const e of l.entries) {
+    if (firstB.has(e.name)) continue;
+    const w = Math.max(0, ...e.sets.filter(s => s.done).map(s => s.weight));
+    if (w > 0) firstB.set(e.name, w);
+  }
+  const gains = [...bestB].filter(([n, v]) => firstB.has(n) && v > firstB.get(n)).map(([n, v]) => ({ n, from: firstB.get(n), to: v }))
+    .sort((a, b) => (b.to - b.from) - (a.to - a.from)).slice(0, 5);
+  const prog = gains.length ? `<div class="section-title">Größte Fortschritte</div><div class="list">${gains.map(g => `<button class="row" data-act="openEx" data-name="${esc(g.n)}"><div class="grow"><div class="title">${esc(g.n)}</div>
+      <div class="sub">${fmtNum(g.from)} kg auf ${fmtNum(g.to)} kg</div></div><span class="m-gain">${diffTxt(g.to - g.from, ' kg')}</span>${ICON.chev}</button>`).join('')}</div>` : '';
+  // Höhepunkte
+  const exCnt = new Map();
+  for (const l of Y.logs) for (const e of l.entries) if (e.sets.some(x => x.done)) exCnt.set(e.name, (exCnt.get(e.name) || 0) + 1);
+  const favEx = [...exCnt].sort((a, b) => b[1] - a[1])[0];
+  const weeks = [...new Set(Y.logs.map(l => weekStart(l.startedAt)))].sort((a, b) => a - b);
+  let run = 0, longest = 0, prev = null;
+  for (const ws of weeks) { run = prev != null && addDays(prev, 7) === ws ? run + 1 : 1; longest = Math.max(longest, run); prev = ws; }
+  const wd = [0, 0, 0, 0, 0, 0, 0];
+  for (const l of Y.logs) wd[(new Date(l.startedAt).getDay() + 6) % 7]++;
+  const fav = wd.indexOf(Math.max(...wd)), WDL = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+  const hi = [];
+  if (favEx) hi.push(`<div class="row"><div class="grow"><div class="sub">Häufigste Übung</div><div class="title">${esc(favEx[0])}</div></div><span class="muted">${favEx[1]}×</span></div>`);
+  if (longest > 1) hi.push(`<div class="row"><div class="grow"><div class="sub">Längste Serie</div><div class="title">${longest} Wochen am Stück trainiert</div></div></div>`);
+  if (Y.logs.length > 2) hi.push(`<div class="row"><div class="grow"><div class="sub">Lieblingstag</div><div class="title">${WDL[fav]} (${wd[fav]}×)</div></div></div>`);
+  if (Y.prs) hi.push(`<div class="row"><div class="grow"><div class="sub">Neue Rekorde</div><div class="title">${pl(Y.prs, 'Rekord', 'Rekorde')} im ganzen Jahr</div></div><span class="pr">PR</span></div>`);
+  const hiHtml = hi.length ? `<div class="section-title">Höhepunkte</div><div class="list">${hi.join('')}</div>` : '';
+  // Muskeln
+  const mc = Object.entries(muscleCounts(new Date(y, 0, 1).getTime(), new Date(y + 1, 0, 1).getTime())).filter(([m, v]) => MUSCLE_DE[m] && v > 0).sort((a, b) => b[1] - a[1]);
+  const mus = mc.length ? `<div class="section-title">Muskeln${infoBtn('sets')}</div><div class="card m-bars">${mc.slice(0, 6).map(([m, v]) => `<div class="m-bar">
+      <span>${MUSCLE_DE[m]}</span><div class="m-track"><i style="width:${Math.max(4, (v / mc[0][1]) * 100).toFixed(0)}%"></i></div><b>${fmtNum(Math.round(v))}</b></div>`).join('')}</div>` : '';
+  // Gewicht übers Jahr
+  const bw = bodySorted().filter(q => new Date(q.t).getFullYear() === y);
+  const bwHtml = bw.length > 1 ? `<div class="section-title">Gewicht</div><button class="card m-bw" data-act="openWeight">
+      <div class="grow"><div class="big">${signKg(bw[bw.length - 1].kg - bw[0].kg).replace(/ kg$/, '<small> kg</small>')}</div>
+      <div class="sub">${fmtKg(bw[0].kg)} am ${ddmm(bw[0].t)} auf ${fmtKg(bw[bw.length - 1].kg)} am ${ddmm(bw[bw.length - 1].t)}</div></div>${ICON.chev}</button>` : '';
+  return nav + stats + chart + hiHtml + prog + mus + bwHtml;
+}
+
+/* ----- Training nachträglich bearbeiten (Sätze, Gewichte, Wiederholungen, Notiz) ----- */
+function logEditSheet() {
+  const E = V.logEdit;
+  setSheet(`<div class="sheet-bar"><button class="linkbtn" data-act="logEditCancel">Abbrechen</button><button class="linkbtn strong" data-act="logEditSave">Sichern</button></div>
+    <div class="sheet-head"><h2>${esc(E.dayName)} bearbeiten</h2></div>
+    <p class="sub">${fmtDate(E.startedAt)}${SEP}${fmtDur(E.endedAt - E.startedAt)} Dauer</p>
+    ${E.entries.map((e, i) => `<div class="card le-ex"><div class="title">${esc(e.name)}</div>
+      <div class="set-row hdr"><span>Satz</span><span>kg</span><span>Wdh.</span><span></span></div>
+      ${e.sets.map((s, j) => `<div class="set-row ${s.done ? 'done' : ''}"><span class="set-no">${j + 1}</span>
+        <input inputmode="decimal" data-le="weight" data-i="${i}" data-j="${j}" value="${fmtIn(s.weight)}" aria-label="Gewicht in kg, Satz ${j + 1}">
+        <input inputmode="numeric" data-le="reps" data-i="${i}" data-j="${j}" value="${s.reps}" aria-label="Wiederholungen, Satz ${j + 1}">
+        <button class="check" data-act="leToggle" data-i="${i}" data-j="${j}" aria-label="Satz ${s.done ? 'nicht gemacht' : 'gemacht'}" aria-pressed="${s.done}">${ICON.check}</button></div>`).join('')}
+      <div class="ex-actions"><button class="btn small" data-act="leAddSet" data-i="${i}">+ Satz</button>
+        <button class="btn small" data-act="leRemSet" data-i="${i}" ${e.sets.length ? '' : 'disabled'}>− Satz</button></div></div>`).join('')}
+    <label class="field"><span>Notiz zum Training</span><textarea class="input" id="le-note" placeholder="optional">${esc(E.note || '')}</textarea></label>
+    <button class="btn primary block" data-act="logEditSave">Änderungen sichern</button>`);
+}
+// Eingaben ins Arbeits-Exemplar übernehmen (vor jedem Neuaufbau des Fensters)
+function leRead() {
+  const E = V.logEdit; if (!E) return;
+  for (const inp of document.querySelectorAll('#sheet [data-le]')) {
+    const s = E.entries[+inp.dataset.i].sets[+inp.dataset.j];
+    if (inp.dataset.le === 'weight') s.weight = Math.max(0, num(inp.value)); else s.reps = Math.max(0, Math.round(num(inp.value)));
+  }
+  const n = $('#le-note'); if (n) E.note = n.value.trim();
+}
+// Rekorde dieses Trainings neu bestimmen: verglichen mit allen Trainings davor
+function recomputePrs(log) {
+  const prs = [];
+  for (const e of log.entries) {
+    const done = e.sets.filter(s => s.done); if (!done.length) continue;
+    const top = done.reduce((b, s) => (s.weight > b.weight || (s.weight === b.weight && s.reps > b.reps)) ? s : b);
+    let prev = null;
+    for (const l of S.logs) {
+      if (l.id === log.id || l.startedAt >= log.startedAt) continue;
+      for (const x of l.entries) if (x.exId === e.exId || x.name === e.name) for (const s of x.sets)
+        if (s.done && (!prev || s.weight > prev.weight || (s.weight === prev.weight && s.reps > prev.reps))) prev = s;
+    }
+    if (isPR(top, prev)) prs.push({ name: e.name, weight: top.weight, reps: top.reps, prevWeight: prev.weight, prevReps: prev.reps });
+  }
+  return prs;
 }

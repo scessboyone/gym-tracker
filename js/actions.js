@@ -186,6 +186,18 @@ const actions = {
   },
 
   openLog(el) { openLog(el.dataset.id); },
+  logEdit(el) { const l = S.logs.find(x => x.id === el.dataset.id); if (!l) return; V.logEdit = clone(l); logEditSheet(); },
+  logEditCancel() { const id = V.logEdit && V.logEdit.id; V.logEdit = null; openLog(id); },
+  leToggle(el) { leRead(); const s = V.logEdit.entries[+el.dataset.i].sets[+el.dataset.j]; s.done = !s.done; logEditSheet(); },
+  leAddSet(el) { leRead(); const e = V.logEdit.entries[+el.dataset.i], last = e.sets[e.sets.length - 1] || { weight: 0, reps: 10 }; e.sets.push({ weight: last.weight, reps: last.reps, done: true }); logEditSheet(); },
+  leRemSet(el) { leRead(); V.logEdit.entries[+el.dataset.i].sets.pop(); logEditSheet(); },
+  logEditSave() {
+    leRead();
+    const E = V.logEdit, i = S.logs.findIndex(x => x.id === E.id);
+    if (i < 0) { closeSheet(); return; }
+    E.prs = recomputePrs(E);
+    S.logs[i] = E; V.logEdit = null; save(); render(); openLog(E.id); toast('Training geändert');
+  },
   calDay(el) { calDaySheet(+el.dataset.t); },
   calMove(el) { calDaySheet(+el.dataset.t, 'move'); },
   calPick(el) { calDaySheet(+el.dataset.t, 'pick'); },
@@ -236,9 +248,17 @@ const actions = {
     V.backTab = from !== 'log' ? from : null; // Zurück führt wieder dorthin
     openSub('month:' + el.dataset.k);
   },
+  openYear(el) {
+    const from = V.tab;
+    if (from !== 'log') selectTab('log');
+    V.backTab = from !== 'log' ? from : null;
+    openSub('year:' + el.dataset.y);
+  },
+  yearGo(el) { if (!el.dataset.y) return; V.sub = 'year:' + el.dataset.y; history.replaceState({ sub: V.sub }, ''); render(); },
   monthGo(el) { V.sub = 'month:' + el.dataset.k; history.replaceState({ sub: V.sub }, ''); render(); },
   openEx(el) { openSub('ex:' + el.dataset.name); },
   setTheme(el) { keepNameDraft(); S.settings.theme = el.dataset.v; save(); applyTheme(); render(); },
+  setRest(el) { keepNameDraft(); S.settings.rest = +el.dataset.v; save(); render(); },
   setAccent(el) { keepNameDraft(); S.settings.accent = el.dataset.v; save(); applyTheme(); render(); },
   toggleList(el) { V[el.dataset.k] = !V[el.dataset.k]; render(); },
   goTab(el) { selectTab(el.dataset.tab); },

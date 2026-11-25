@@ -68,7 +68,38 @@ function renderMore() {
         <input type="file" accept="application/json,.json,text/plain,.txt" data-field="importFile" hidden></label>
       <button class="row" data-act="wipe"><div class="grow"><div class="title" style="color:var(--red)">Alle Daten löschen</div></div></button>
     </div>
+    <details class="card adv" ${V.advOpen ? 'open' : ''}><summary>Erweiterte Informationen${ICON.down}</summary><div id="advInfo" class="adv-list">${advRows()}</div></details>
     <p class="sub" style="text-align:center;margin-top:24px">Gym Tracker ${APP_VERSION}${SEP}Übungsdaten: free-exercise-db (gemeinfrei)${SEP}Muskelgrafik: react-body-highlighter (MIT)</p>`;
+}
+// Technische Angaben: Speicher, Schutz der Daten, Installation, Umfang der Daten
+const advRow = (k, v, id) => `<div class="adv-row"><span>${k}</span><b${id ? ` id="${id}"` : ''}>${v}</b></div>`;
+const mb = b => b >= 1e9 ? `${fmtNum(Math.round(b / 1e8) / 10)} GB` : `${fmtNum(Math.round(b / 1e5) / 10)} MB`;
+function advRows() {
+  const dev = IS_IOS ? 'iPhone / iPad' : /Android/.test(navigator.userAgent) ? 'Android' : 'Computer';
+  return advRow('App-Version', APP_VERSION)
+    + advRow('Gerät', dev)
+    + advRow('Als App installiert', isStandalone() ? 'Ja' : 'Nein (im Browser geöffnet)')
+    + advRow('Offline nutzbar', 'serviceWorker' in navigator && navigator.serviceWorker.controller ? 'Ja' : 'Noch nicht (beim nächsten Öffnen)')
+    + advRow('Belegter Speicher', '…', 'adv-usage')
+    + advRow('Daten dauerhaft geschützt', '…', 'adv-persist')
+    + advRow('Trainings im Verlauf', fmtNum(S.logs.length))
+    + advRow('Gewichtseinträge', fmtNum((S.body || []).length))
+    + advRow('Übungen im Plan', fmtNum(S.plan.days.reduce((n, d) => n + d.exercises.length, 0)))
+    + advRow('Letztes Backup', S.settings.lastBackup ? fmtDate(S.settings.lastBackup) : 'noch nie')
+    + advRow('Dabei seit', S.settings.since ? fmtDate(S.settings.since) : '–');
+}
+// Werte, die der Browser nur asynchron liefert
+async function fillAdvInfo() {
+  const u = $('#adv-usage'), p = $('#adv-persist');
+  if (!u || !p) return;
+  try {
+    const e = navigator.storage && navigator.storage.estimate ? await navigator.storage.estimate() : null;
+    u.textContent = e && e.usage != null ? `${mb(e.usage)}${e.quota ? ` von ${mb(e.quota)}` : ''}` : 'unbekannt';
+  } catch { u.textContent = 'unbekannt'; }
+  try {
+    const ok = navigator.storage && navigator.storage.persisted ? await navigator.storage.persisted() : null;
+    p.textContent = ok == null ? 'unbekannt' : ok ? 'Ja' : 'Nein – bei wenig Speicher kann der Browser löschen';
+  } catch { p.textContent = 'unbekannt'; }
 }
 /* Google Drive direkt (nur Android/PC): Anmeldung über Google, Datei landet im Ordner „Gym Tracker“.
    Die Client-ID ist öffentlich (kein Geheimnis); Zugriff nur auf Dateien, die die App selbst anlegt (drive.file). */

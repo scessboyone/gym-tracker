@@ -12,6 +12,9 @@ Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gy
 - Kalender: Trainings verschieben, tauschen, ausfallen lassen, Extra-Training, krank melden; Wochenziel + Serie
 - Verlauf pro Übung (eigene Seite): alle Sätze, Bestwert, Kurve
 - Monatsrückblick: Trainings, Zeit, kg, Rekorde, Fortschritte, Muskeln und Gewicht pro Monat, Vergleich zum Vormonat
+- Jahresrückblick: ab 20. Dezember als Widget auf Home (bis 31.12.), danach dauerhaft unter Verlauf
+- Training nachträglich bearbeiten (Verlauf → Training → Bearbeiten), Abschluss-Feier mit Wochenziel und Serie
+- Mehr → „Erweiterte Informationen“: Speicherplatz, Schutz der Daten, Installation, Umfang der Daten
 - Gewichtsverlauf: Diagramm (Zeitraum, 7-Tage-Schnitt, Ziel), Statistik, Uhrzeit wird automatisch eingetragen (änderbar)
 - Design im Apple-Stil mit Hell-, Dunkel- und Automatik-Modus und wählbarer Akzentfarbe (Blau, Türkis, Indigo, Lila, Pink, Rot, Graphit; Mehr → Darstellung), Wochenring auf Home
 - Erster Start: Willkommens-Karte mit Name, Hell/Dunkel und Akzentfarbe
@@ -45,6 +48,7 @@ Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gy
 | `main.js` | Tab-Leiste, Wischen, Hell/Dunkel, Start |
 
 - Neue Dateien in `js/` auch in `index.html` und in `FILES` in `sw.js` eintragen
+- Vor jedem `git push` laufen alle Tests (`.githooks/pre-push`, einrichten mit `git config core.hooksPath .githooks`)
 - Automatische Tests mit Playwright in `tests/` (alle auf einmal: `tests/run-all.js`, Chrome und WebKit, siehe `tests/README.md`)
 - iPhone-Startbilder in `icons/splash/`, neu erzeugen mit `tools/make-splash.js`
 

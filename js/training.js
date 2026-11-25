@@ -244,6 +244,7 @@ function celebrate(log) {
         <div><b>${sets}</b><span>${sets === 1 ? 'Satz' : 'Sätze'}</span></div>
         <div><b>${kgShort(vol)}</b><span>bewegt</span></div>
       </div>
+      ${celebrateWeek()}
       ${prs.length ? `<div class="cel-prs"><div class="sub">${prs.length === 1 ? 'Neuer Rekord' : `${prs.length} neue Rekorde`}</div>
         ${prs.map(p => `<div class="cel-pr"><span>${esc(p.name)}</span><b>${kgTxt(p.weight)} × ${p.reps}</b></div>`).join('')}</div>` : ''}
       <button class="btn primary block" id="celDone">Fertig</button>
@@ -254,6 +255,16 @@ function celebrate(log) {
   $('#celDone').focus({ preventScroll: true });
   if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
   if (!reduceMotion.matches) confetti($('#confetti'));
+}
+// Wochenziel und Serie nach dem Training (das gerade gespeicherte Training zählt schon mit)
+function celebrateWeek() {
+  const w = weekStats();
+  if (!w.req && !w.streak) return '';
+  const goal = w.req ? (w.c >= w.req ? `Wochenziel geschafft: ${w.c} von ${w.req} Trainings` : `Diese Woche: ${w.c} von ${w.req} Trainings`) : '';
+  return `<div class="cel-week">
+    ${goal ? `<div class="cel-goal${w.c >= w.req ? ' full' : ''}"><span>${goal}</span><div class="progress"><i style="width:${Math.min(100, (w.c / w.req) * 100)}%"></i></div></div>` : ''}
+    ${w.streak ? `<div class="cel-streak"><b>${w.streak}</b> ${w.streak === 1 ? 'Woche' : 'Wochen'} in Folge alle Trainings geschafft</div>` : ''}
+  </div>`;
 }
 function closeCelebrate() {
   const el = $('#celebrate'); if (!el) return;

@@ -26,7 +26,8 @@ function render() {
   else if (V.tab === 'plan') view.innerHTML = V.sub && findDay(V.sub) ? renderDayEditor(findDay(V.sub)) : renderPlan();
   else if (V.tab === 'log') view.innerHTML = V.sub === 'weight' ? renderWeight() : V.sub === 'ex' ? renderExList() : V.sub === 'muscles' ? renderMuscles()
     : typeof V.sub === 'string' && V.sub.startsWith('ex:') ? renderExHist(V.sub.slice(3))
-    : typeof V.sub === 'string' && V.sub.startsWith('month:') ? renderMonth(V.sub.slice(6)) : renderLog();
+    : typeof V.sub === 'string' && V.sub.startsWith('month:') ? renderMonth(V.sub.slice(6))
+    : typeof V.sub === 'string' && V.sub.startsWith('year:') ? renderYear(+V.sub.slice(5)) : renderLog();
   else view.innerHTML = renderMore();
   tickElapsed();
 }
@@ -120,8 +121,17 @@ function renderHome() {
     <label class="field"><span>Dein Name</span><input class="input" id="name-in" placeholder="Dein Name" maxlength="30" autocomplete="given-name" value="${esc(V.nameDraft || '')}"></label>
     <div class="field"><span>Darstellung</span>${themeSeg()}</div>
     <div class="field"><span>Akzentfarbe</span>${accentPicker()}</div>
+    <div class="field"><span>Pause zwischen den Sätzen</span>${restSeg()}</div>
     <button class="btn primary block" style="margin-top:16px" data-act="saveName">Los geht’s</button></div>`;
   h += installBanner() + backupBanner();
+  // 20. bis 31. Dezember: eigenes Widget für den Jahresrückblick
+  if (yearWidgetDue()) {
+    const y = new Date().getFullYear(), Y = yearStats(y);
+    h += `<button class="card year-card" data-act="openYear" data-y="${y}">
+      <div class="year-ic">${TROPHY}</div>
+      <div class="grow"><div class="sub">Jahresrückblick</div><div class="year-t">Dein Jahr ${y}</div>
+      <div class="sub">${pl(Y.logs.length, 'Training', 'Trainings')}${SEP}${tons(Y.vol)} bewegt</div></div>${ICON.chev}</button>`;
+  }
   if (!days.length) {
     return h + `<div class="card"><b>Noch kein Trainingsplan</b><div class="sub" style="margin:2px 0 12px">Leg deine Trainingstage und Übungen an – oder lass dir einen Plan-Link schicken (Mehr → Plan).</div>
       <button class="btn primary block" data-act="goPlan">Plan erstellen</button></div>`;

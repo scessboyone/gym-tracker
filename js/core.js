@@ -7,10 +7,17 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.24.0';
+const APP_VERSION = '0.25.0';
 // Änderungen je Version (neueste zuerst). Nach einem Update zeigt die App nur, was seit der zuletzt gesehenen Version neu ist.
 // Neue Version: oben einen Eintrag { v: APP_VERSION, items: [...] } ergänzen.
 const CHANGELOG = [
+  { v: '0.25.0', items: [
+    'Training nachträglich bearbeiten: Training im Verlauf antippen, oben auf „Bearbeiten“',
+    'Die Abschluss-Feier zeigt jetzt auch Wochenziel und Serie',
+    'Jahresrückblick: ab dem 20. Dezember auf Home, danach dauerhaft unter Verlauf',
+    'Mehr → „Erweiterte Informationen“: Speicherplatz, Schutz der Daten, Version und mehr',
+    'Beim ersten Start lässt sich auch die Pause zwischen den Sätzen wählen',
+  ] },
   { v: '0.24.0', items: [
     'Neu: Abschluss-Feier nach dem Training mit Pokal, Konfetti, Spruch und deinen Zahlen (inkl. neuer Rekorde)',
     'Training: Die Muskeln stehen jetzt nur noch in der Anleitung, „Anleitung“ steht unter dem Bild',
@@ -157,6 +164,10 @@ const accentPicker = () => `<div class="acc-row" role="radiogroup" aria-label="A
 }).join('')}</div>`;
 const themeSeg = () => `<div class="seg">${[['auto', 'Automatisch'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([v, l]) =>
   `<button class="${(S.settings.theme || 'auto') === v ? 'on' : ''}" data-act="setTheme" data-v="${v}">${l}</button>`).join('')}</div>`;
+// Standard-Pause zwischen den Sätzen (Sekunden) – beim ersten Start und unter Mehr wählbar
+const REST_PRESETS = [[60, '60 s'], [90, '90 s'], [120, '2 min'], [180, '3 min']];
+const restSeg = () => `<div class="seg">${REST_PRESETS.map(([v, l]) =>
+  `<button class="${(S.settings.rest || 90) === v ? 'on' : ''}" data-act="setRest" data-v="${v}">${l}</button>`).join('')}</div>`;
 const infoBtn = k => `<button class="info-btn" data-act="info" data-k="${k}" aria-label="Erklärung: ${INFO[k].t}">${ICON.info}</button>`;
 const pl = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const SEP = '<span class="sep" aria-hidden="true"></span>';

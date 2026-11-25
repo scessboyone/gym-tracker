@@ -668,3 +668,47 @@ body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: 
   #celebrate, .cel-card { transition: none; }
   #celebrate.show .cel-trophy { animation: none; }
 }
+
+/* ---------- Abschluss-Feier: Wochenziel und Serie ---------- */
+.cel-week { display: grid; gap: 8px; margin: 0 0 16px; text-align: left; }
+.cel-goal { padding: 10px 12px; border-radius: 12px; background: var(--field); font-size: 14px; }
+.cel-goal .progress { margin-top: 8px; }
+.cel-goal.full span { color: var(--green); font-weight: 700; }
+.cel-streak { padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); font-size: 14px; }
+.cel-streak b { color: var(--accent); font-family: var(--font-display); font-size: 17px; }
+
+/* ---------- Jahresrückblick ---------- */
+.year-card { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; color: var(--text); background: var(--accent-soft); border: 0; }
+.year-card .grow { flex: 1; min-width: 0; }
+.year-ic { display: grid; place-items: center; flex: none; width: 52px; height: 52px; border-radius: 50%; background: var(--accent-fill); color: var(--accent-ink); }
+.year-ic svg { width: 30px; height: 30px; stroke: currentColor; stroke-width: 3; fill: none; stroke-linejoin: round; }
+.year-ic .cup { fill: currentColor; }
+.year-t { font-family: var(--font-display); font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+.year-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.y-bars { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; height: 150px; align-items: end; }
+.y-bar { display: grid; grid-template-rows: auto 1fr auto; height: 100%; justify-items: center; gap: 4px; }
+.y-bar b { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--sub); min-height: 15px; }
+.y-bar i { align-self: end; width: 100%; max-width: 20px; min-height: 2px; border-radius: 6px 6px 2px 2px; background: var(--field-2); }
+.y-bar.best i { background: var(--accent-fill); }
+.y-bar.best b { color: var(--accent); }
+.y-bar span { font-size: 12px; color: var(--sub); }
+
+/* ---------- Training bearbeiten ---------- */
+.sheet-bar { display: flex; justify-content: space-between; align-items: center; margin: -4px 0 4px; }
+.sheet-bar .linkbtn svg { width: 18px; height: 18px; }
+.linkbtn.strong { font-weight: 700; }
+.le-ex { padding: 12px 16px; }
+.le-ex .title { font-weight: 700; margin-bottom: 4px; }
+
+/* ---------- Erweiterte Informationen ---------- */
+.adv { padding: 0; margin-top: 28px; }
+.adv summary { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 14px 16px; min-height: 52px; font-weight: 600; cursor: pointer; list-style: none; border-radius: var(--radius); }
+.adv summary::-webkit-details-marker { display: none; }
+.adv summary svg { width: 20px; height: 20px; color: var(--sub); transition: transform var(--dur-short) ease-out; }
+.adv[open] summary svg { transform: rotate(180deg); }
+.adv summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.adv-list { padding: 0 16px 8px; }
+.adv-row { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 15px; }
+.adv-row span { color: var(--sub); }
+.adv-row b { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .adv summary svg { transition: none; } }
