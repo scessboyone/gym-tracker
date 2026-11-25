@@ -7,10 +7,15 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.23.0';
+const APP_VERSION = '0.24.0';
 // Änderungen je Version (neueste zuerst). Nach einem Update zeigt die App nur, was seit der zuletzt gesehenen Version neu ist.
 // Neue Version: oben einen Eintrag { v: APP_VERSION, items: [...] } ergänzen.
 const CHANGELOG = [
+  { v: '0.24.0', items: [
+    'Neu: Abschluss-Feier nach dem Training mit Pokal, Konfetti, Spruch und deinen Zahlen (inkl. neuer Rekorde)',
+    'Training: Die Muskeln stehen jetzt nur noch in der Anleitung, „Anleitung“ steht unter dem Bild',
+    'Fehler behoben: Nach „Minimieren“ steht die Auswahl in der Tab-Leiste richtig auf Home',
+  ] },
   { v: '0.23.0', items: [
     'Neu: Akzentfarbe wählbar (Mehr → Darstellung): Blau, Türkis, Indigo, Lila, Pink, Rot oder Graphit',
     'Kalender: Der heutige Tag ist jetzt in der Akzentfarbe ausgefüllt statt schwarz umrandet',

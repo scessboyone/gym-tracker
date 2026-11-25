@@ -16,6 +16,8 @@ function setTop(title, left = '', right = '', info = '') {
   tb.classList.toggle('static', !left && !right);
 }
 function render() {
+  // Vollbild zuerst umschalten: Ist die Tab-Leiste noch versteckt, kann die Pille nicht gemessen werden (blieb nach „Minimieren“ auf Training)
+  document.body.classList.toggle('focus', inFocus());
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === V.tab));
   placePill();
   const view = $('#view');
@@ -26,7 +28,6 @@ function render() {
     : typeof V.sub === 'string' && V.sub.startsWith('ex:') ? renderExHist(V.sub.slice(3))
     : typeof V.sub === 'string' && V.sub.startsWith('month:') ? renderMonth(V.sub.slice(6)) : renderLog();
   else view.innerHTML = renderMore();
-  document.body.classList.toggle('focus', inFocus());
   tickElapsed();
 }
 

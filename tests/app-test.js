@@ -76,13 +76,21 @@ async function run(browser, scheme) {
   // Minimieren und zurück
   await page.locator('[data-act="minimize"]').click(); await settle();
   ok(scheme, 'Training: Minimieren zeigt Tab-Leiste', await page.locator('#tabs').isVisible());
+  // Zielposition der Pille (ihre Bewegung ist animiert) mit der Position des Home-Knopfs vergleichen
+  const pill = await page.evaluate(() => { const p = $('#tabs .pill'), b = $('#tabs [data-tab="home"]'); const x = +((p.style.transform.match(/translateX\(([-\d.]+)px/) || [])[1]); return Number.isFinite(x) ? Math.abs(x - b.offsetLeft) : 999; });
+  ok(scheme, 'Training: nach Minimieren steht die Pille auf Home', pill < 12, `Abstand ${Math.round(pill)}px`);
+  ok(scheme, 'Training: keine Muskel-Zeile unter dem Bild', await page.evaluate(() => !document.querySelector('.ex-focus .dot-mp')));
   await page.getByRole('button', { name: 'Weiter trainieren' }).click(); await settle();
   ok(scheme, 'Training: „Weiter trainieren“ zurück im Vollbild', await page.evaluate(() => document.body.classList.contains('focus')));
   await page.locator('[data-act="exNext"]').click(); await settle(); // letzte Übung → Beenden-Fenster
   ok(scheme, 'Training: Beenden-Fenster offen', await page.locator('#sheet [data-act="finishSave"]').isVisible());
   await shot('05-beenden');
   await page.locator('#sheet [data-act="finishSave"]').click(); await settle();
-  for (let k = 0; k < 2; k++) { const b = page.locator('#sheet [data-act="closeSheet"]'); if (await b.isVisible().catch(() => false)) { await b.click(); await settle(); } }
+  ok(scheme, 'Training: Abschluss-Feier erscheint', await page.locator('#celebrate .cel-card').isVisible() && (await page.locator('#celebrate h2').innerText()).includes('geschafft'));
+  await page.waitForTimeout(700);
+  await shot('05b-feier');
+  await page.locator('#celDone').click(); await page.waitForTimeout(600);
+  ok(scheme, 'Training: „Fertig“ schließt die Feier', !(await page.locator('#celebrate').count()));
   ok(scheme, 'Training: gespeichert, kein aktives Training', await page.evaluate(() => !S.active && S.logs.length === 1));
 
   // 4. Verlauf, Monatsrückblick, Verlauf pro Übung

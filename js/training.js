@@ -87,7 +87,6 @@ function renderEntry(en, i) {
       ${exThumb(pe || en, 'musbig')}
       <span class="ex-fig-hint">Anleitung${ICON.chev}</span>
     </button>
-    ${muscleLegend(pe || en)}
     ${target ? `<div class="sub">${target}</div>` : ''}
     ${last ? `<div class="sub">Letztes Mal: ${esc(last)}</div>` : ''}
     ${pe ? `<button class="note ${pe.note ? '' : 'blank'}" data-act="editNote" data-i="${i}" aria-label="Notiz bearbeiten">${ICON.edit}<span>${pe.note ? esc(pe.note) : 'Notiz hinzufügen'}</span></button>` : ''}
@@ -210,12 +209,82 @@ function finishWorkout(apply, note) {
   }
   S.active = null;
   stopRest(); flush();
+  // Das Beenden-Fenster wird zur Feier (gleicher Verlaufseintrag, damit „Zurück“ sie schließt)
+  if (sheetOpen) { hideSheet(); history.replaceState({ cel: true }, ''); } else history.pushState({ cel: true }, '');
   render(); scrollTo(0, 0);
-  if (!prs.length) { closeSheet(); toast('Training gespeichert'); return; }
-  setSheet(`<div class="sheet-head"><h2>Neue Rekorde</h2></div>
-    <div class="list">${prs.map(p => `<div class="row"><div class="grow"><div class="title">${esc(p.name)}</div>
-      <div class="sub">${kgTxt(p.weight)} × ${p.reps} Wdh. <span class="muted">(vorher ${kgTxt(p.prevWeight)} × ${p.prevReps})</span></div></div></div>`).join('')}</div>
-    <button class="btn primary block" data-act="closeSheet">Stark</button>`);
+  celebrate(log);
+}
+
+/* ----- Abschluss-Feier: Pokal, Konfetti, Spruch und die Zahlen des Trainings ----- */
+const CHEERS = [
+  'Stark! Jedes Training zählt.',
+  'Heute besser als gestern.',
+  'Dranbleiben lohnt sich – du bist der Beweis.',
+  'Das war Arbeit. Jetzt ist Erholung dran.',
+  'Kleine Schritte, große Wirkung.',
+  'Gewicht bewegt, Kopf frei.',
+  'Disziplin schlägt Motivation – und du hattest beides.',
+  'Wieder ein Baustein mehr. Weiter so!',
+];
+const TROPHY = '<svg viewBox="0 0 64 64" aria-hidden="true"><path class="cup" d="M20 8h24v14c0 9-5.4 15-12 15s-12-6-12-15V8z"/>'
+  + '<path d="M20 13h-7v4c0 6 4 10 9 10M44 13h7v4c0 6-4 10-9 10M32 37v9M23 54h18M26 46h12v8H26z"/></svg>';
+function celebrate(log) {
+  const { sets, vol } = logStats(log);
+  const prs = log.prs || [];
+  const el = document.createElement('div');
+  el.id = 'celebrate';
+  el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Training geschafft');
+  el.innerHTML = `<canvas id="confetti" aria-hidden="true"></canvas>
+    <div class="cel-card">
+      <div class="cel-trophy">${TROPHY}</div>
+      <h2>Training geschafft!</h2>
+      <p class="cel-quote">${esc(CHEERS[Math.floor(Math.random() * CHEERS.length)])}</p>
+      <div class="cel-stats">
+        <div><b>${minTxt(log.endedAt - log.startedAt)}</b><span>Dauer</span></div>
+        <div><b>${sets}</b><span>${sets === 1 ? 'Satz' : 'Sätze'}</span></div>
+        <div><b>${kgShort(vol)}</b><span>bewegt</span></div>
+      </div>
+      ${prs.length ? `<div class="cel-prs"><div class="sub">${prs.length === 1 ? 'Neuer Rekord' : `${prs.length} neue Rekorde`}</div>
+        ${prs.map(p => `<div class="cel-pr"><span>${esc(p.name)}</span><b>${kgTxt(p.weight)} × ${p.reps}</b></div>`).join('')}</div>` : ''}
+      <button class="btn primary block" id="celDone">Fertig</button>
+    </div>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  $('#celDone').addEventListener('click', () => history.back()); // schließt über popstate
+  $('#celDone').focus({ preventScroll: true });
+  if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+  if (!reduceMotion.matches) confetti($('#confetti'));
+}
+function closeCelebrate() {
+  const el = $('#celebrate'); if (!el) return;
+  el.classList.remove('show'); el.dataset.closed = '1';
+  setTimeout(() => el.remove(), 250);
+}
+// Konfetti in den App-Farben: fällt drei Sekunden, dann ist Ruhe
+function confetti(cv) {
+  const ctx = cv.getContext('2d'), dpr = devicePixelRatio || 1;
+  const W = cv.width = innerWidth * dpr, H = cv.height = innerHeight * dpr;
+  const css = getComputedStyle(document.documentElement);
+  const cols = ['--accent-fill', '--green-fill', '--heat', '--sw-teal', '--sw-purple', '--sw-pink'].map(v => css.getPropertyValue(v).trim()).filter(Boolean);
+  const parts = Array.from({ length: 140 }, () => ({
+    x: W / 2 + (Math.random() - 0.5) * W * 0.3, y: H * 0.35, vx: (Math.random() - 0.5) * 14 * dpr, vy: (-6 - Math.random() * 10) * dpr,
+    w: (5 + Math.random() * 6) * dpr, h: (8 + Math.random() * 8) * dpr, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.3,
+    c: cols[Math.floor(Math.random() * cols.length)],
+  }));
+  const t0 = performance.now();
+  const step = now => {
+    if (!cv.isConnected) return;
+    const age = now - t0;
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalAlpha = age > 2600 ? Math.max(0, 1 - (age - 2600) / 900) : 1;
+    for (const p of parts) {
+      p.vy += 0.35 * dpr; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.r * 2))); ctx.restore();
+    }
+    if (age < 3500) requestAnimationFrame(step); else ctx.clearRect(0, 0, W, H);
+  };
+  requestAnimationFrame(step);
 }
 
 /* ----- Info-Sheet zu einer Übung ----- */

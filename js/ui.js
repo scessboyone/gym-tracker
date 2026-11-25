@@ -106,6 +106,7 @@ window.addEventListener('popstate', () => {
   if (dlgAfterPop) { dlgAfterPop(); return; }
   if (dlgCancel) { dlgCancel(); return; }
   if (ignorePop) { ignorePop = false; return; }
+  if ($('#celebrate') && !$('#celebrate').dataset.closed) { closeCelebrate(); return; }
   if (sheetOpen) { hideSheet(); return; }
   if (V.sub) {
     // Nur eigene Einträge aus diesem Laden zählen – ältere (vor einem Neuladen) führen zurück zur Hauptseite
