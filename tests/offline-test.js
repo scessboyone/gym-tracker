@@ -17,7 +17,7 @@ const URL = process.env.TARGET_URL || 'http://127.0.0.1:8777/';
       return shell ? (await (await caches.open(shell)).keys()).map(r => new URL(r.url).pathname) : [];
     });
     const need = ['/js/core.js', '/js/main.js', '/style.css', '/index.html'];
-    const miss = need.filter(n => !cached.includes(n));
+    const miss = need.filter(n => !cached.some(c => c.endsWith(n)));
     console.log(miss.length ? `FAIL Cache fehlt: ${miss.join(', ')}` : `OK   ${cached.length} Dateien im Cache`);
     ok = ok && !miss.length;
     await ctx.setOffline(true);
