@@ -165,7 +165,7 @@ main { padding: 4px 16px calc(var(--safe-b) + 152px); max-width: 640px; margin: 
 
 /* ---------- Karten und Überschriften ---------- */
 .card { background: var(--card); color: var(--text); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
-.section-title { display: flex; align-items: center; gap: 4px; color: var(--text); font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin: 28px 4px 8px; }
+.section-title { color: var(--text); font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin: 28px 4px 8px; }
 .section-title:first-child { margin-top: 8px; }
 .sec-note { color: var(--sub); font-size: 15px; font-weight: 500; margin-left: 8px; letter-spacing: 0; }
 .sub { color: var(--sub); font-size: 14px; }
@@ -569,6 +569,8 @@ body.focus main { padding-bottom: calc(var(--safe-b) + 176px); }
 .info-btn:hover { background: var(--accent-soft); }
 .info-btn:active { opacity: .7; }
 .info-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
-.sub.info-line .info-btn { width: 28px; height: 28px; margin: -6px -6px -6px 0; }
+.sub.info-line .info-btn { width: 28px; height: 28px; margin: -6px 0; }
 .info-line { display: flex; align-items: center; gap: 4px; }
-#topleft .info-btn { margin: -4px 0 -4px -6px; }
+.section-title .info-btn { vertical-align: middle; margin: -6px 0 -4px 2px; }
+#title .info-btn { vertical-align: middle; width: 36px; height: 36px; margin: -8px 0 -4px 2px; }
+#title .info-btn svg { width: 24px; height: 24px; }

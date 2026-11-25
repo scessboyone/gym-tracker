@@ -26,10 +26,11 @@ const ORDER = ['home', 'train', 'plan', 'log', 'more'];
     const hit = (x, y) => { const e = document.elementFromPoint(x, y); return !e || e.closest('input, textarea, select, .bwsvg, .chart svg, .no-swipe, #tabs, #sheet, #timer, .wk-nav'); };
     const blocked = (x, y) => hit(x, y) || hit(x, y - 24) || hit(x, y + 24);
     for (let d = 0; d < 300; d += 10) for (const y of [y0 + d, y0 - d]) if (y > 120 && y < innerHeight - 110 && !blocked(300, y) && !blocked(112, y)) return y;
-    return y0;
+    return null; // keine freie Stelle: Testproblem, kein App-Fehler
   }, y0);
   const swipe = async (yWant, dir) => {
     const y = await freeY(yWant);
+    if (y == null) return false;
     const x0 = 300, x1 = dir < 0 ? 300 - 200 : 300 + 200; // nach links wischen = nächster Bereich
     const [xa, xb] = dir < 0 ? [x0, x1] : [112, 312];
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: xa, y }] });
@@ -39,19 +40,20 @@ const ORDER = ['home', 'train', 'plan', 'log', 'more'];
     }
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await page.waitForTimeout(450);
+    return true;
   };
   let fail = 0;
   for (const [y, where] of [[400, 'Mitte'], [760, 'unten im leeren Bereich']]) {
     await page.evaluate(() => selectTab('home')); await page.waitForTimeout(300);
     for (let k = 1; k < ORDER.length; k++) {
-      await swipe(y, -1);
+      if (!await swipe(y, -1)) { fail++; console.log(`FAIL (Test) keine freie Stelle zum Wischen auf „${ORDER[k - 1]}“ (${where})`); await page.evaluate(t => selectTab(t), ORDER[k]); continue; }
       const tab = await page.evaluate(() => V.tab);
       const ok = tab === ORDER[k];
       if (!ok) fail++;
       console.log(`${ok ? 'OK  ' : 'FAIL'} nach links (${where}) → ${ORDER[k]}${ok ? '' : ', ist aber ' + tab}`);
     }
     for (let k = ORDER.length - 2; k >= 0; k--) {
-      await swipe(y, 1);
+      if (!await swipe(y, 1)) { fail++; console.log(`FAIL (Test) keine freie Stelle zum Wischen auf „${ORDER[k + 1]}“ (${where})`); await page.evaluate(t => selectTab(t), ORDER[k]); continue; }
       const tab = await page.evaluate(() => V.tab);
       const ok = tab === ORDER[k];
       if (!ok) fail++;

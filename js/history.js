@@ -231,11 +231,12 @@ function muscleCounts(from, to = Infinity) {
   }
   return cnt;
 }
-const planMuscles = () => new Set(allExercises().flatMap(o => hasMuscles(o) ? [...o.muscles.p, ...o.muscles.s] : []));
+// Muskeln der Hauptübungen im Plan (Alternativen nicht – sonst stünde ihr Muskel dauerhaft unter „Noch nicht dran“)
+const planMuscles = () => new Set(S.plan.days.flatMap(d => d.exercises).flatMap(o => hasMuscles(o) ? [...o.muscles.p, ...o.muscles.s] : []));
 // Sätze je Muskel im gewählten Zeitraum (Woche / 4 Wochen) und welche Plan-Muskeln noch fehlen
 function heatData() {
   const range = V.heat || 'w';
-  const from = range === 'w' ? weekStart(Date.now()) : dayStart(Date.now()) - 27 * DAY;
+  const from = range === 'w' ? weekStart(Date.now()) : addDays(dayStart(Date.now()), -27);
   const planMus = planMuscles(), cnt = muscleCounts(from);
   const top = Object.entries(cnt).filter(([k, v]) => MUSCLE_DE[k] && v > 0).sort((x, y) => y[1] - x[1]);
   const missing = [...planMus].filter(k => !cnt[k] && MUSCLE_DE[k]);
@@ -253,11 +254,11 @@ function renderHeat() {
   const fig = side => `<svg viewBox="0 0 1000 2200" aria-hidden="true">${Object.entries(BODY[side]).map(([k, list]) =>
     list.map(pts => `<polygon class="${k === 'head' || k === 'knees' ? 'mh' : levels[k] ? 'h' + levels[k] : 'mb'}" points="${pts}"/>`).join('')).join('')}</svg>`;
   return `<div class="card">
-    <div class="heat-head"><div><div class="sub">Muskeln</div><b>${label}</b></div>${heatSeg(range)}</div>
+    <div class="heat-head"><div><div class="sub info-line">Muskeln${infoBtn('heat')}</div><b>${label}</b></div>${heatSeg(range)}</div>
     <div class="heat">${fig('front')}${fig('back')}</div>
-    <div class="heat-legend"><span><i class="h1"></i>wenig</span><span><i class="h2"></i>mittel</span><span><i class="h3"></i>viel</span>${infoBtn('heat')}</div>
-    ${top.length ? `<button class="heat-more" data-act="openMuscles">Muskel-Statistik${ICON.chev}</button>`
-      : `<p class="sub" style="margin:12px 0 0;text-align:center">${range === 'w' ? 'Diese Woche' : 'In den letzten 4 Wochen'} noch kein Training.</p>`}
+    <div class="heat-legend"><span><i class="h1"></i>wenig</span><span><i class="h2"></i>mittel</span><span><i class="h3"></i>viel</span></div>
+    ${top.length ? '' : `<p class="sub" style="margin:12px 0 0;text-align:center">${range === 'w' ? 'Diese Woche' : 'In den letzten 4 Wochen'} noch kein Training.</p>`}
+    <button class="heat-more" data-act="openMuscles">Muskel-Statistik${ICON.chev}</button>
   </div>`;
 }
 // Unterseite: alle Muskeln mit Sätzen und die, die noch nicht dran waren
@@ -337,8 +338,8 @@ function renderWeek() {
   const sickThisWeek = planned - req;
   return `<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:baseline">
-      <div><div class="sub">Diese Woche</div><div class="big">${c} / ${req} <span class="sub">Trainings${sickThisWeek ? ` (${sickThisWeek}× krank)` : ''}</span></div></div>
-      <div style="text-align:right"><div class="sub info-line" style="justify-content:flex-end">Serie${infoBtn('week')}</div><div class="big">${streak} ${streak === 1 ? 'Woche' : 'Wochen'}</div></div>
+      <div><div class="sub info-line">Diese Woche${infoBtn('week')}</div><div class="big">${c} / ${req} <span class="sub">Trainings${sickThisWeek ? ` (${sickThisWeek}× krank)` : ''}</span></div></div>
+      <div style="text-align:right"><div class="sub">Serie</div><div class="big">${streak} ${streak === 1 ? 'Woche' : 'Wochen'}</div></div>
     </div>
     <div class="progress"><i style="width:${req ? Math.min(100, (c / req) * 100) : 100}%"></i></div>
     <div class="cal">${cells}</div>

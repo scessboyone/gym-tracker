@@ -4,8 +4,9 @@
 
 /* ---------- Rendern ---------- */
 const inFocus = () => V.tab === 'train' && !!S.active && !V.sub;
-function setTop(title, left = '', right = '') {
-  $('#title').textContent = title;
+// info: Schlüssel aus INFO – dann steht der i-Knopf direkt hinter dem Seitentitel
+function setTop(title, left = '', right = '', info = '') {
+  $('#title').innerHTML = esc(title) + (info ? infoBtn(info) : '');
   $('#topleft').innerHTML = left;
   $('#topright').innerHTML = right;
 }

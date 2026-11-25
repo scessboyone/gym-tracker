@@ -7,10 +7,14 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.21.1';
+const APP_VERSION = '0.21.2';
 // Änderungen je Version (neueste zuerst). Nach einem Update zeigt die App nur, was seit der zuletzt gesehenen Version neu ist.
 // Neue Version: oben einen Eintrag { v: APP_VERSION, items: [...] } ergänzen.
 const CHANGELOG = [
+  { v: '0.21.2', items: [
+    'Verlauf → Muskeln: „Muskel-Statistik“ ist jetzt immer erreichbar, auch wenn diese Woche noch kein Training war',
+    'Die i-Knöpfe stehen jetzt überall direkt neben dem Titel, den sie erklären',
+  ] },
   { v: '0.21.1', items: [
     'Muskel-Statistik: „Am meisten“ zeigt nur noch Muskeln, die wirklich trainiert wurden, der Rest steht unter „Noch nicht dran“',
     'Umschalter (z. B. Woche / 4 Wochen) im Dunkelmodus besser lesbar',
@@ -142,7 +146,7 @@ const ICON = {
 // Kurze Erklärungen hinter dem i-Knopf (statt Text direkt auf der Seite)
 const INFO = {
   week: { t: 'Kalender und Serie', x: 'Tippe auf einen Tag, um ein Training zu verschieben, ausfallen zu lassen, ein Extra-Training einzuplanen oder dich krank zu melden.\nSerie: Wochen am Stück, in denen du alle geplanten Trainings geschafft hast. Krank-Tage zählen nicht dagegen.' },
-  heat: { t: 'Muskeln', x: 'Die Farbe zeigt, wie viele Sätze ein Muskel bekommen hat. Hauptmuskel zählt ganz, Hilfsmuskel halb.\nPro Woche: 1 bis 5 Sätze wenig, 6 bis 11 mittel, ab 12 viel. Bei 4 Wochen gilt das Vierfache.' },
+  heat: { t: 'Muskeln', x: 'Die Farbe zeigt, wie viele Sätze ein Muskel bekommen hat. Hauptmuskel zählt ganz, Hilfsmuskel halb.\nPro Woche: unter 6 Sätze wenig, 6 bis unter 12 mittel, ab 12 viel. Bei 4 Wochen gilt das Vierfache.' },
   sets: { t: 'Sätze pro Muskel', x: 'Jeder erledigte Satz zählt für den Hauptmuskel der Übung ganz und für jeden Hilfsmuskel halb.' },
   missing: { t: 'Noch nicht dran', x: 'Muskeln aus deinem Plan, die im gewählten Zeitraum noch keinen Satz bekommen haben, mit einer passenden Übung aus deinem Plan.' },
   plan: { t: 'Plan', x: 'Tippe auf einen Tag, um Übungen, Sätze, Wiederholungen und Gewichte zu bearbeiten. Mit den Pfeilen änderst du die Reihenfolge.' },

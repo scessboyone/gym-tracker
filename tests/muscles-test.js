@@ -35,6 +35,13 @@ fs.mkdirSync(OUT, { recursive: true });
   const t = (ok, msg) => { if (!ok) fail++; console.log(`${ok ? 'OK  ' : 'FAIL'} ${msg}`); };
   t(res.top.length === 2 && res.top.every(x => !/ 0$/.test(x)), `Am meisten nur trainierte Muskeln: ${res.top.join(', ')}`);
   t(res.missing.includes('Oberer Rücken') && res.missing.includes('Bizeps'), `Noch nicht dran: ${res.missing.join(', ')}`);
+  // Ohne Training in dieser Woche: Link zur Muskel-Statistik trotzdem da
+  await page.evaluate(async () => { S.logs = []; await idb.set('state', S); history.back(); });
+  await page.waitForTimeout(400);
+  await page.evaluate(() => { V.sub = null; selectTab('home'); selectTab('log'); }); await page.waitForTimeout(400);
+  t(await page.locator('.heat-more').isVisible(), 'Muskel-Statistik-Link auch ohne Training sichtbar');
+  await page.locator('.heat-more').click(); await page.waitForTimeout(400);
+  t(await page.evaluate(() => V.sub === 'muscles'), 'Link öffnet die Muskel-Statistik');
   t(!errors.length, 'keine JavaScript-Fehler' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await browser.close();
   process.exitCode = fail ? 1 : 0;

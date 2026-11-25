@@ -4,7 +4,7 @@
 
 /* ----- Plan ----- */
 function renderPlan() {
-  setTop('Plan', S.plan.days.length ? infoBtn('plan') : '', '<button class="linkbtn" data-act="addDay">+ Tag</button>');
+  setTop('Plan', '', '<button class="linkbtn" data-act="addDay">+ Tag</button>', S.plan.days.length ? 'plan' : '');
   if (!S.plan.days.length) {
     return `<div class="empty"><b>Noch keine Trainingstage</b>Leg z. B. „Push“, „Pull“ und „Beine“ an.</div>
       <button class="btn primary block" data-act="addDay">Trainingstag anlegen</button>
