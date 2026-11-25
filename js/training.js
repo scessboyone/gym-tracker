@@ -177,7 +177,7 @@ function finishSheet() {
   openSheet(`<div class="sheet-head"><h2>Training beenden</h2></div>
     <p class="sub">${done} von ${total} Sätzen erledigt${SEP}Dauer ${fmtDur(Date.now() - S.active.startedAt)}</p>
     <label class="field"><span>Notiz zum Training (optional)</span>
-      <textarea class="input" id="finishNote" placeholder="z. B. Schulter gezwickt, schlecht geschlafen …">${esc(S.active.note || '')}</textarea></label>
+      <textarea class="input" id="finishNote" placeholder="z. B. Schulter gezwickt, schlecht geschlafen …"></textarea></label>
     <div class="list"><label class="toggle"><span>Gewichte und Wiederholungen als neuen Standard in den Plan übernehmen</span>
       <input type="checkbox" id="applyPlan" checked></label></div>
     <button class="btn primary block" data-act="finishSave">Speichern</button>

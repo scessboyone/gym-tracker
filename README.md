@@ -17,7 +17,7 @@ Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gy
 - Mehr → „Erweiterte Informationen“: Speicherplatz, Schutz der Daten, Installation, Umfang der Daten
 - Gewichtsverlauf: Diagramm (Zeitraum, 7-Tage-Schnitt, Ziel), Statistik, Uhrzeit wird automatisch eingetragen (änderbar)
 - Design im Apple-Stil mit Hell-, Dunkel- und Automatik-Modus und wählbarer Akzentfarbe (Blau, Türkis, Indigo, Lila, Pink, Rot, Graphit; Mehr → Darstellung), Wochenring auf Home
-- Erster Start: Willkommens-Karte mit Name, Hell/Dunkel und Akzentfarbe
+- Erster Start: Willkommens-Karte mit Name, Hell/Dunkel, Akzentfarbe und Pause zwischen den Sätzen
 - Eigene Dialoge im App-Design, Update-Hinweis nur mit den Neuerungen seit der letzten Version
 - Kurze Erklärungen hinter einem i-Knopf im jeweiligen Bereich (Texte in `INFO` in `js/core.js`)
 - iPhone: Safari → Teilen → „Zum Home-Bildschirm“ (Vollbild, eigenes Icon), Backup über „In Dateien sichern“ → iCloud Drive
@@ -31,6 +31,7 @@ Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gy
 - Daten nur auf dem Gerät (IndexedDB). Backup: Tab „Mehr“ → „In Drive sichern“ bzw. als Datei
 - Offline-fähig über Service Worker (`sw.js`)
 - Bei jeder Änderung `VERSION` in `sw.js` und `APP_VERSION` in `js/core.js` hochzählen
+- Beim Laden (Start, Backup, Plan-Link/-Datei) prüft `cleanState`/`cleanPlan` in `js/more.js` alle Daten; neue Datenfelder dort ergänzen
 - Code in `js/`, als normale Skripte nacheinander geladen (Reihenfolge in `index.html`), alle teilen sich den globalen Bereich:
 
 | Datei | Inhalt |

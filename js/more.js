@@ -398,7 +398,6 @@ async function importData(file) {
       await idb.set(k, v); localImgs[k.slice(4)] = v;
     }
     S = cleanState(data.state);
-    delete S.settings.wakeLock; delete S.settings.notify;
     await flush(); applyTheme(); render(); toast('Backup geladen');
   } catch (e) { toast('Import fehlgeschlagen: ' + e.message); }
 }
