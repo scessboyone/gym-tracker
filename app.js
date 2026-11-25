@@ -5,9 +5,11 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.17.1';
+const APP_VERSION = '0.18.0';
 // Wird nach einem Update einmal angezeigt
 const CHANGELOG = [
+  'Training neu: eine Übung pro Seite mit Weiter/Zurück und Fortschrittsbalken – Übung überspringen, wenn die Maschine besetzt ist (kommt am Ende nochmal)',
+  'Verlauf → „Verlauf pro Übung“: alle Sätze, Bestwert und Kurve je Übung auf einer eigenen Seite',
   'Der Bildschirm bleibt im Training nicht mehr extra an',
   'Feinschliff: Fenster wie „Neue Übung“ sind nicht mehr durchsichtig, Gewichts-Kopfzeile sauber ausgerichtet, „1 Satz“ statt „1 Sätze“',
   'Gewicht eintragen: Die Uhrzeit wird nicht mehr abgeschnitten, „Eintragen“ steht jetzt breit darunter',
@@ -304,7 +306,8 @@ function render() {
   if (V.tab === 'home') view.innerHTML = renderHome();
   else if (V.tab === 'train') view.innerHTML = S.active ? renderWorkout() : renderDays();
   else if (V.tab === 'plan') view.innerHTML = V.sub && findDay(V.sub) ? renderDayEditor(findDay(V.sub)) : renderPlan();
-  else if (V.tab === 'log') view.innerHTML = V.sub === 'weight' ? renderWeight() : renderLog();
+  else if (V.tab === 'log') view.innerHTML = V.sub === 'weight' ? renderWeight() : V.sub === 'ex' ? renderExList()
+    : typeof V.sub === 'string' && V.sub.startsWith('ex:') ? renderExHist(V.sub.slice(3)) : renderLog();
   else view.innerHTML = renderMore();
   tickElapsed();
 }
@@ -519,19 +522,46 @@ function workoutCounts() {
   for (const en of S.active.entries) for (const s of en.sets) { total++; if (s.done) done++; }
   return { done, total };
 }
+// Reihenfolge der Übungen im laufenden Training (Überspringen schiebt eine Übung ans Ende)
+function ensureOrder(A) {
+  if (!Array.isArray(A.order) || A.order.length !== A.entries.length) A.order = A.entries.map((_, i) => i);
+  A.pos = Math.min(Math.max(0, A.pos || 0), A.order.length - 1);
+}
+const entryDone = en => en.sets.length > 0 && en.sets.every(s => s.done);
+function workoutHead() {
+  const A = S.active;
+  const { done, total } = workoutCounts();
+  const n = A.order.length, en = A.entries[A.order[A.pos]];
+  const next = A.pos < n - 1 ? A.entries[A.order[A.pos + 1]].name : '';
+  return `<section class="card glass wk-head" id="wk-head">
+    <div class="wk-title">${esc(A.dayName)}</div>
+    <div class="wk-meta"><span>Dauer <b id="elapsed">${fmtDur(Date.now() - A.startedAt)}</b></span><span>${done} / ${total} Sätze</span></div>
+    <div class="steps" role="tablist" aria-label="Übungen">${A.order.map((idx, k) => {
+      const e = A.entries[idx], d = e.sets.filter(x => x.done).length, pct = e.sets.length ? (d / e.sets.length) * 100 : 0;
+      return `<button class="step${k === A.pos ? ' on' : ''}${entryDone(e) ? ' done' : ''}" data-act="exGo" data-k="${k}" role="tab" aria-selected="${k === A.pos}" aria-label="${esc(e.name)}"><i style="width:${pct}%"></i></button>`;
+    }).join('')}</div>
+    <div class="wk-step">Übung ${A.pos + 1} von ${n}${en.skipped && !entryDone(en) ? '<span class="sep" aria-hidden="true"></span>übersprungen, jetzt nachholen' : next ? `<span class="sep" aria-hidden="true"></span>danach ${esc(next)}` : ''}</div>
+  </section>`;
+}
 function renderWorkout() {
   const A = S.active;
-  setTop('Training');
-  const { done, total } = workoutCounts();
-  let h = `<section class="card glass wk-head">
-    <div class="wk-title">${esc(A.dayName)}</div>
-    <div class="wk-meta"><span>Dauer <b id="elapsed">0:00</b></span><span id="wkcount">${done} / ${total} Sätze</span></div>
-    <div class="progress"><i id="wkbar" style="width:${total ? (done / total) * 100 : 0}%"></i></div>
-  </section>`;
-  A.entries.forEach((en, i) => { h += renderEntry(en, i); });
-  h += `<button class="btn primary block" data-act="finish">Training beenden</button>
-        <button class="btn ghost block" data-act="cancelWorkout">Training verwerfen</button>`;
-  return h;
+  ensureOrder(A);
+  setTop('Training', '', '<button class="linkbtn" data-act="finish">Beenden</button>');
+  const i = A.order[A.pos], last = A.pos === A.order.length - 1;
+  return `${workoutHead()}
+    ${renderEntry(A.entries[i], i)}
+    <div class="wk-nav">
+      <button class="btn" data-act="exPrev" ${A.pos === 0 ? 'disabled' : ''}>${ICON.back}Zurück</button>
+      <button class="btn primary" data-act="exNext">${last ? 'Training beenden' : `Weiter${ICON.chev}`}</button>
+    </div>
+    ${last ? '' : '<button class="btn ghost block" data-act="exSkip">Übung überspringen und später machen</button>'}
+    <button class="btn ghost block" data-act="cancelWorkout">Training verwerfen</button>`;
+}
+function goEx(k) {
+  const A = S.active; if (!A) return;
+  const dir = Math.sign(k - A.pos);
+  A.pos = k; save(); render(); scrollTo(0, 0);
+  if (dir) slideIn(dir);
 }
 function renderEntry(en, i) {
   const base = findEx(en.exId);            // Hauptübung (Sätze, Pause)
@@ -606,9 +636,8 @@ const isPR = (s, best) => !!best && (s.weight > best.weight || (s.weight === bes
 function rerenderEntry(i) {
   const el = $('#en-' + i);
   if (el) el.outerHTML = renderEntry(S.active.entries[i], i);
-  const { done, total } = workoutCounts();
-  const c = $('#wkcount'); if (c) c.textContent = `${done} / ${total} Sätze`;
-  const b = $('#wkbar'); if (b) b.style.width = (total ? (done / total) * 100 : 0) + '%';
+  const h = $('#wk-head');
+  if (h) { ensureOrder(S.active); h.outerHTML = workoutHead(); }
 }
 function tickElapsed() {
   const el = $('#elapsed');
@@ -902,12 +931,8 @@ function renderLog() {
   setTop('Verlauf');
   let h = renderWeek() + renderHeat() + renderBody();
   if (!S.logs.length) return h + '<div class="empty"><b>Noch keine Trainings</b>Sobald du ein Training beendest, erscheint es hier.</div>';
-  const names = exerciseNames();
-  if (!chartName || !names.includes(chartName)) chartName = names[0];
-  h += `<div class="card chart">
-    <label class="field" style="margin-bottom:8px"><span>Fortschritt: schwerster Satz pro Training (kg)</span>
-    <select class="input" data-field="chartName">${names.map(n => `<option ${n === chartName ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
-    ${exerciseChart(chartName)}</div>`;
+  h += `<div class="list"><button class="row" data-act="openExList"><div class="grow"><div class="title">Verlauf pro Übung</div>
+    <div class="sub">Alle Sätze, Bestwert und Kurve für jede Übung</div></div>${ICON.chev}</button></div>`;
   h += renderRecords();
   h += '<div class="section-title">Letzte Trainings</div><div class="list">';
   for (const l of V.allLogs ? S.logs : S.logs.slice(0, 3)) {
@@ -919,6 +944,50 @@ function renderLog() {
       ${l.note ? `<div class="sub" style="font-style:italic">„${esc(l.note)}“</div>` : ''}</div>${ICON.chev}</button>`;
   }
   return h + moreRow('allLogs', S.logs.length) + '</div>';
+}
+/* ----- Verlauf pro Übung: Liste und Detailseite ----- */
+function exHistory(name) {
+  const out = [];
+  for (const l of S.logs) { // neueste zuerst
+    const en = l.entries.find(e => e.name === name);
+    const done = en ? en.sets.filter(s => s.done) : [];
+    if (done.length) out.push({ l, sets: done });
+  }
+  return out;
+}
+function renderExList() {
+  setTop('Übungen', `<button class="linkbtn" data-act="back">${ICON.back}Verlauf</button>`);
+  const seen = new Map();
+  for (const l of S.logs) for (const e of l.entries) {
+    if (!e.sets.some(s => s.done)) continue;
+    const r = seen.get(e.name) || { name: e.name, n: 0, last: l.startedAt };
+    r.n++; seen.set(e.name, r);
+  }
+  const rows = [...seen.values()];
+  if (!rows.length) return '<div class="empty"><b>Noch keine Übungen trainiert</b>Sobald du ein Training beendest, erscheinen die Übungen hier.</div>';
+  return `<div class="list">${rows.map(r => {
+    const pe = allExercises().find(e => e.name === r.name);
+    const b = bestSet(pe && pe.id, r.name);
+    return `<button class="row" data-act="openEx" data-name="${esc(r.name)}"><div class="grow"><div class="title">${esc(r.name)}</div>
+      <div class="sub">${pl(r.n, 'Training', 'Trainings')}${SEP}zuletzt ${relDay(r.last)}${b ? `${SEP}Bestwert ${kgTxt(b.weight)} × ${b.reps}` : ''}</div></div>${ICON.chev}</button>`;
+  }).join('')}</div>`;
+}
+function renderExHist(name) {
+  setTop(name, `<button class="linkbtn" data-act="back">${ICON.back}Übungen</button>`);
+  const hist = exHistory(name);
+  if (!hist.length) return '<div class="empty"><b>Noch keine Sätze</b>Für diese Übung gibt es noch keine erledigten Sätze.</div>';
+  const pe = allExercises().find(e => e.name === name);
+  const b = bestSet(pe && pe.id, name);
+  const prLogs = new Set(S.logs.filter(l => (l.prs || []).some(p => p.name === name)).map(l => l.id));
+  return `<div class="card ex-stats">
+      <div><div class="big">${b ? `${fmtNum(b.weight)}<small> kg × ${b.reps}</small>` : '–'}</div><div class="sub">Bestwert${b ? ', ' + fmtDate(b.t) : ''}</div></div>
+      <div><div class="big">${hist.length}</div><div class="sub">${hist.length === 1 ? 'Training' : 'Trainings'}</div></div>
+    </div>
+    <div class="card chart"><div class="sub" style="margin-bottom:8px">Schwerster Satz pro Training (kg)</div>${exerciseChart(name)}</div>
+    <div class="section-title">Alle Trainings</div>
+    <div class="list">${hist.map(({ l, sets }) => `<button class="row" data-act="openLog" data-id="${l.id}"><div class="grow">
+      <div class="title">${fmtDate(l.startedAt)} <span class="muted" style="font-weight:400;margin-left:4px">${esc(l.dayName)}</span>${prLogs.has(l.id) ? '<span class="pr">PR</span>' : ''}</div>
+      <div class="sub">${sets.map(x => `${fmtNum(x.weight)} kg × ${x.reps}`).join(', ')}</div></div>${ICON.chev}</button>`).join('')}</div>`;
 }
 function logStats(l) {
   let sets = 0, vol = 0;
@@ -1388,6 +1457,12 @@ function renderMore() {
     <div class="list">
       ${IS_IOS ? `<button class="row" data-act="driveBackup"><div class="grow"><div class="title">In iCloud sichern</div>
         <div class="sub">Öffnet „Teilen“ → „In Dateien sichern“ → iCloud Drive wählen → Sichern</div></div>${ICON.chev}</button>`
+      : DRIVE_DIRECT ? `<button class="row" data-act="driveBackup"><div class="grow"><div class="title">In Google Drive sichern</div>
+        <div class="sub">Ein Tipp – landet im Ordner „Gym Tracker“ in deinem Drive</div></div>${ICON.chev}</button>
+      <button class="row" data-act="driveRestore"><div class="grow"><div class="title">Aus Google Drive laden</div>
+        <div class="sub">Neuestes Backup aus dem Ordner „Gym Tracker“ – ersetzt alle Daten</div></div>${ICON.chev}</button>
+      <button class="row" data-act="fileBackup"><div class="grow"><div class="title">Als Datei speichern</div>
+        <div class="sub">Landet im Ordner „Downloads“</div></div>${ICON.chev}</button>`
       : `<button class="row" data-act="driveBackup"><div class="grow"><div class="title">In Google Drive sichern</div>
         <div class="sub">Öffnet „Teilen“ → „Drive“ wählen → Speichern</div></div>${ICON.chev}</button>
       <button class="row" data-act="fileBackup"><div class="grow"><div class="title">Als Datei speichern</div>
@@ -1413,14 +1488,91 @@ function renderMore() {
     </div>
     <p class="sub" style="text-align:center;margin-top:24px">Gym Tracker ${APP_VERSION}${SEP}Übungsdaten: free-exercise-db (gemeinfrei)${SEP}Muskelgrafik: react-body-highlighter (MIT)</p>`;
 }
+/* Google Drive direkt (nur Android/PC): Anmeldung über Google, Datei landet im Ordner „Gym Tracker“.
+   Die Client-ID ist öffentlich (kein Geheimnis); Zugriff nur auf Dateien, die die App selbst anlegt (drive.file). */
+const GDRIVE_CLIENT_ID = '';
+const DRIVE_DIRECT = !!GDRIVE_CLIENT_ID && !IS_IOS;
+let gToken = null, gTokenExp = 0;
+function loadGis() {
+  return new Promise((res, rej) => {
+    if (window.google && google.accounts && google.accounts.oauth2) return res();
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client'; s.async = true;
+    s.onload = () => res(); s.onerror = () => rej(new Error('Google ist nicht erreichbar'));
+    document.head.appendChild(s);
+  });
+}
+async function driveToken() {
+  if (gToken && Date.now() < gTokenExp - 60000) return gToken;
+  await loadGis();
+  return new Promise((res, rej) => {
+    const c = google.accounts.oauth2.initTokenClient({
+      client_id: GDRIVE_CLIENT_ID, scope: 'https://www.googleapis.com/auth/drive.file',
+      callback: r => { if (r.error) return rej(new Error(r.error)); gToken = r.access_token; gTokenExp = Date.now() + r.expires_in * 1000; res(gToken); },
+      error_callback: e => rej(new Error(e && e.type === 'popup_closed' ? 'Anmeldung abgebrochen' : 'Anmeldung fehlgeschlagen')),
+    });
+    c.requestAccessToken({ prompt: S.settings.driveOk ? '' : 'consent' });
+  });
+}
+async function gapi(url, opt = {}) {
+  const t = await driveToken();
+  const r = await fetch(url, { ...opt, headers: { ...(opt.headers || {}), Authorization: 'Bearer ' + t } });
+  if (r.status === 401) gToken = null;
+  if (!r.ok) throw new Error('Google Drive antwortet nicht (' + r.status + ')');
+  return r;
+}
+async function driveFolder() {
+  const q = encodeURIComponent("name='Gym Tracker' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+  const found = await (await gapi(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`)).json();
+  if (found.files.length) return found.files[0].id;
+  const made = await (await gapi('https://www.googleapis.com/drive/v3/files?fields=id', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'Gym Tracker', mimeType: 'application/vnd.google-apps.folder' }),
+  })).json();
+  return made.id;
+}
+async function backupData() {
+  await flush();
+  const images = {};
+  for (const k of await idb.keys()) if (String(k).startsWith('img:')) images[k] = await idb.get(k);
+  return { app: 'gym-tracker', version: APP_VERSION, exportedAt: new Date().toISOString(), state: S, images };
+}
+async function driveUpload() {
+  const prev = S.settings.lastBackup;
+  try {
+    await driveToken(); // zuerst, solange der Tipp noch als Nutzeraktion zählt
+    toast('Sichere in Google Drive …');
+    S.settings.lastBackup = Date.now();
+    const data = await backupData();
+    const folder = await driveFolder();
+    const body = new FormData();
+    body.append('metadata', new Blob([JSON.stringify({ name: `gym-backup-${new Date().toISOString().slice(0, 10)}.txt`, parents: [folder], mimeType: 'text/plain' })], { type: 'application/json' }));
+    body.append('file', new Blob([JSON.stringify(data)], { type: 'text/plain' }));
+    await gapi('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', { method: 'POST', body });
+    S.settings.driveOk = true; save(); render();
+    toast('Backup in Google Drive gesichert');
+  } catch (e) {
+    S.settings.lastBackup = prev; save();
+    toast('Drive-Backup fehlgeschlagen: ' + e.message);
+  }
+}
+async function driveRestore() {
+  try {
+    await driveToken();
+    const folder = await driveFolder();
+    const q = encodeURIComponent(`'${folder}' in parents and trashed=false`);
+    const list = await (await gapi(`https://www.googleapis.com/drive/v3/files?q=${q}&orderBy=createdTime desc&pageSize=1&fields=files(id,createdTime)`)).json();
+    if (!list.files.length) { toast('Kein Backup in Google Drive gefunden'); return; }
+    const txt = await (await gapi(`https://www.googleapis.com/drive/v3/files/${list.files[0].id}?alt=media`)).text();
+    S.settings.driveOk = true;
+    await importData({ text: async () => txt });
+  } catch (e) { toast('Laden aus Drive fehlgeschlagen: ' + e.message); }
+}
 // Backup: mode 'share' = Teilen-Menü (Android: Google Drive, iPhone: „In Dateien sichern“ → iCloud), 'file' = Download.
 // Chrome erlaubt beim Teilen keine .json-Dateien, daher .txt (Inhalt ist JSON).
 async function exportData(mode) {
   S.settings.lastBackup = Date.now();
-  await flush();
-  const images = {};
-  for (const k of await idb.keys()) if (String(k).startsWith('img:')) images[k] = await idb.get(k);
-  const data = { app: 'gym-tracker', version: APP_VERSION, exportedAt: new Date().toISOString(), state: S, images };
+  const data = await backupData();
   const name = `gym-backup-${new Date().toISOString().slice(0, 10)}.txt`;
   const res = await shareFile(data, name, 'Gym-Backup', mode);
   if (res === 'abort') { S.settings.lastBackup = null; save(); return; }
@@ -1654,9 +1806,10 @@ window.addEventListener('popstate', () => {
   if (dlgCancel) { dlgCancel(); return; }
   if (ignorePop) { ignorePop = false; return; }
   if (sheetOpen) { hideSheet(); return; }
-  if (V.sub) { V.sub = null; render(); }
+  if (V.sub) { V.sub = (history.state && history.state.sub) || null; subDepth = Math.max(0, subDepth - 1); render(); scrollTo(0, 0); }
 });
-function openSub(id) { V.sub = id; history.pushState({ sub: id }, ''); render(); scrollTo(0, 0); }
+let subDepth = 0;
+function openSub(id) { V.sub = id; subDepth++; history.pushState({ sub: id }, ''); render(); scrollTo(0, 0); }
 
 let toastT = null;
 function toast(msg, action) {
@@ -1743,6 +1896,21 @@ const actions = {
   },
   exInfo(el) { exInfo(+el.dataset.i); },
   finish() { finishSheet(); },
+  exPrev() { if (S.active && S.active.pos > 0) goEx(S.active.pos - 1); },
+  exNext() {
+    const A = S.active; if (!A) return;
+    if (A.pos >= A.order.length - 1) { finishSheet(); return; }
+    goEx(A.pos + 1);
+  },
+  exGo(el) { goEx(+el.dataset.k); },
+  exSkip() {
+    const A = S.active; if (!A || A.pos >= A.order.length - 1) return;
+    const [idx] = A.order.splice(A.pos, 1);
+    A.order.push(idx);
+    A.entries[idx].skipped = true;
+    save(); render(); scrollTo(0, 0); slideIn(1);
+    toast(`${A.entries[idx].name} kommt am Ende nochmal`);
+  },
   finishSave() { finishWorkout($('#applyPlan').checked, $('#finishNote').value.trim()); },
   async cancelWorkout() {
     if (!await ask('Training verwerfen?', 'Die Sätze dieses Trainings werden nicht gespeichert.', 'Verwerfen', true)) return;
@@ -1910,6 +2078,8 @@ const actions = {
     save(); render(); toast(`${fmtKg(kg)} um ${time || hhmm()} Uhr eingetragen`);
   },
   openWeight() { V.tab = 'log'; openSub('weight'); },
+  openExList() { openSub('ex'); },
+  openEx(el) { openSub('ex:' + el.dataset.name); },
   setTheme(el) { S.settings.theme = el.dataset.v; save(); applyTheme(); render(); },
   toggleList(el) { V[el.dataset.k] = !V[el.dataset.k]; render(); },
   goTab(el) { selectTab(el.dataset.tab); },
@@ -1957,7 +2127,8 @@ const actions = {
     closeSheet(); render();
   },
   async install() { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice; installEvt = null; render(); },
-  driveBackup() { exportData('share'); },
+  driveBackup() { if (DRIVE_DIRECT) driveUpload(); else exportData('share'); },
+  driveRestore() { driveRestore(); },
   fileBackup() { exportData('file'); },
   sharePlan() { exportPlan(); },
   sharePlanLink() { sharePlanLink(); },
@@ -1987,7 +2158,7 @@ const TAB_ORDER = ['home', 'train', 'plan', 'log', 'more'];
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 function selectTab(t) {
   if (sheetOpen) closeSheet();
-  if (V.sub) { V.sub = null; history.back(); }
+  if (V.sub) { V.sub = null; const n = subDepth || 1; subDepth = 0; history.go(-n); }
   const dir = Math.sign(TAB_ORDER.indexOf(t) - TAB_ORDER.indexOf(V.tab)); // 1 = nach rechts
   V.tab = t; render(); scrollTo(0, 0);
   if (dir) slideIn(dir);
@@ -2164,6 +2335,7 @@ darkMq.addEventListener('change', applyTheme);
   } catch (e) { toast('Speicher nicht verfügbar: ' + e.message); }
   applyTheme();
   render();
+  if (DRIVE_DIRECT) loadGis().catch(() => {});
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   // Neuerungen einmal nach einem Update zeigen (nicht beim allerersten Start)
   if (saved && S.settings.seenVersion !== APP_VERSION) {

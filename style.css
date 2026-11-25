@@ -208,6 +208,21 @@ main { padding: 4px 16px calc(var(--safe-b) + 152px); max-width: 640px; margin: 
 .wk-title { font-family: var(--font-display); font-size: 22px; font-weight: 800; }
 .progress { height: 8px; background: var(--field); border-radius: 99px; overflow: hidden; margin-top: 12px; }
 .progress i { display: block; height: 100%; background: var(--green-fill); border-radius: 99px; }
+/* Fortschritt je Übung: ein Abschnitt pro Übung, antippen springt hin */
+.steps { display: flex; gap: 4px; margin-top: 12px; }
+.step { flex: 1; min-width: 0; padding: 8px 0; background: none; border: 0; }
+.step::before { content: ""; display: block; height: 6px; border-radius: 99px; background: var(--field-2); }
+.step i { display: block; height: 6px; margin-top: -6px; border-radius: 99px; background: var(--green-fill); max-width: 100%; }
+.step.on::before { background: var(--accent-fill); opacity: .35; }
+.step.on i { background: var(--accent-fill); }
+.step.done i { background: var(--green-fill); }
+.step:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.wk-step { color: var(--sub); font-size: 14px; margin-top: 2px; overflow-wrap: break-word; }
+.wk-nav { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; margin: 4px 0 8px; }
+.wk-nav .btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.wk-nav .btn svg { width: 20px; height: 20px; }
+.ex-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ex-stats .big small { font-size: 16px; color: var(--sub); font-weight: 700; }
 
 .ex-head { display: flex; gap: 12px; align-items: flex-start; }
 .ex-head .grow { flex: 1; min-width: 0; }
