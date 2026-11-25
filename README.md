@@ -13,7 +13,8 @@ Trainingsplan-App fürs Handy (PWA), live unter https://scessboyone.github.io/gy
 - Verlauf pro Übung (eigene Seite): alle Sätze, Bestwert, Kurve
 - Monatsrückblick: Trainings, Zeit, kg, Rekorde, Fortschritte, Muskeln und Gewicht pro Monat, Vergleich zum Vormonat
 - Gewichtsverlauf: Diagramm (Zeitraum, 7-Tage-Schnitt, Ziel), Statistik, Uhrzeit wird automatisch eingetragen (änderbar)
-- Design im Apple-Stil mit Hell-, Dunkel- und Automatik-Modus (Mehr → Darstellung), blauer Akzent, Wochenring auf Home
+- Design im Apple-Stil mit Hell-, Dunkel- und Automatik-Modus und wählbarer Akzentfarbe (Blau, Türkis, Indigo, Lila, Pink, Rot, Graphit; Mehr → Darstellung), Wochenring auf Home
+- Erster Start: Willkommens-Karte mit Name, Hell/Dunkel und Akzentfarbe
 - Eigene Dialoge im App-Design, Update-Hinweis nur mit den Neuerungen seit der letzten Version
 - Kurze Erklärungen hinter einem i-Knopf im jeweiligen Bereich (Texte in `INFO` in `js/core.js`)
 - iPhone: Safari → Teilen → „Zum Home-Bildschirm“ (Vollbild, eigenes Icon), Backup über „In Dateien sichern“ → iCloud Drive

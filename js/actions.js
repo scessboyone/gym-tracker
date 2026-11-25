@@ -3,6 +3,8 @@
 // Alle Dateien in js/ teilen sich den globalen Bereich; Reihenfolge siehe index.html.
 
 /* ---------- Aktionen ---------- */
+// Beim Umschalten von Farbe/Darstellung den schon getippten Namen behalten (die Seite wird neu aufgebaut)
+function keepNameDraft() { const i = $('#name-in'); if (i) V.nameDraft = i.value; }
 const actions = {
   goPlan() { V.tab = 'plan'; render(); },
   async start(el) {
@@ -236,13 +238,13 @@ const actions = {
   },
   monthGo(el) { V.sub = 'month:' + el.dataset.k; history.replaceState({ sub: V.sub }, ''); render(); },
   openEx(el) { openSub('ex:' + el.dataset.name); },
-  setTheme(el) { S.settings.theme = el.dataset.v; save(); applyTheme(); render(); },
+  setTheme(el) { keepNameDraft(); S.settings.theme = el.dataset.v; save(); applyTheme(); render(); },
+  setAccent(el) { keepNameDraft(); S.settings.accent = el.dataset.v; save(); applyTheme(); render(); },
   toggleList(el) { V[el.dataset.k] = !V[el.dataset.k]; render(); },
   goTab(el) { selectTab(el.dataset.tab); },
   saveName() {
     const v = $('#name-in').value.trim();
-    if (!v) { toast('Bitte einen Namen eingeben'); return; }
-    S.settings.name = v.slice(0, 30); save(); render();
+    S.settings.name = v.slice(0, 30); S.settings.setupDone = true; V.nameDraft = ''; save(); render();
   },
   bwRange(el) { bwRange = el.dataset.r; render(); },
   bwAddDated() {

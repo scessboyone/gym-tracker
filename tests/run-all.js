@@ -18,6 +18,7 @@ const TESTS = [
   ['topbar-test.js', ['chromium', 'webkit']],
   ['month-text-test.js', ['chromium', 'webkit']],
   ['review-test.js', ['chromium', 'webkit']],
+  ['accent-test.js', ['chromium', 'webkit']],
   ['swipe-test.js', ['chromium']],
   ['offline-test.js', ['chromium', 'webkit']],
 ];

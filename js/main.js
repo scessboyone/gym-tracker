@@ -177,9 +177,13 @@ document.addEventListener('focusin', e => { if (e.target.matches('.set-row input
 /* ---------- Hell / Dunkel ---------- */
 const darkMq = matchMedia('(prefers-color-scheme: dark)');
 function applyTheme() {
-  const t = S.settings.theme || 'auto', root = document.documentElement;
+  const t = S.settings.theme || 'auto', root = document.documentElement, a = S.settings.accent || 'blue';
   if (t === 'auto') delete root.dataset.theme; else root.dataset.theme = t;
-  try { if (t === 'auto') localStorage.removeItem('gym-theme'); else localStorage.setItem('gym-theme', t); } catch { /* egal */ }
+  if (a === 'blue') delete root.dataset.accent; else root.dataset.accent = a;
+  try {
+    if (t === 'auto') localStorage.removeItem('gym-theme'); else localStorage.setItem('gym-theme', t);
+    if (a === 'blue') localStorage.removeItem('gym-accent'); else localStorage.setItem('gym-accent', a); // schon vor dem Laden setzen (kein Aufblitzen)
+  } catch { /* egal */ }
   const dark = t === 'dark' || (t === 'auto' && darkMq.matches);
   document.querySelectorAll('meta[name="theme-color"]').forEach(m => { m.content = dark ? '#000000' : '#f2f2f7'; });
 }

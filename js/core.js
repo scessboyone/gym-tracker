@@ -7,10 +7,15 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.22.1';
+const APP_VERSION = '0.23.0';
 // Änderungen je Version (neueste zuerst). Nach einem Update zeigt die App nur, was seit der zuletzt gesehenen Version neu ist.
 // Neue Version: oben einen Eintrag { v: APP_VERSION, items: [...] } ergänzen.
 const CHANGELOG = [
+  { v: '0.23.0', items: [
+    'Neu: Akzentfarbe wählbar (Mehr → Darstellung): Blau, Türkis, Indigo, Lila, Pink, Rot oder Graphit',
+    'Kalender: Der heutige Tag ist jetzt in der Akzentfarbe ausgefüllt statt schwarz umrandet',
+    'Beim ersten Start: Name, Hell/Dunkel und Akzentfarbe direkt auf der Startseite einstellen',
+  ] },
   { v: '0.22.1', items: [
     'Fehler behoben: Tage ohne Übungen lassen sich nicht mehr starten (vorher Absturz)',
     'Plan übernehmen lässt ein laufendes Training jetzt in Ruhe',
@@ -139,6 +144,14 @@ const INFO = {
   alts: { t: 'Alternativen', x: 'Zum Beispiel Maschine statt Kurzhanteln, falls etwas besetzt ist. Im Training schaltest du mit dem Pfeil-Knopf neben dem Übungsnamen um.\nSätze und Pause gelten wie bei der Hauptübung, Gewicht, Verlauf und Rekorde werden getrennt geführt.' },
   theme: { t: 'Darstellung', x: 'Automatisch folgt der Hell- oder Dunkel-Einstellung deines Handys.' },
 };
+// Akzentfarben (Werte in style.css); Grün fehlt absichtlich, weil Grün „erledigt“ bedeutet
+const ACCENTS = [['blue', 'Blau'], ['teal', 'Türkis'], ['indigo', 'Indigo'], ['purple', 'Lila'], ['pink', 'Pink'], ['red', 'Rot'], ['graphite', 'Graphit']];
+const accentPicker = () => `<div class="acc-row" role="radiogroup" aria-label="Akzentfarbe">${ACCENTS.map(([v, l]) => {
+  const on = (S.settings.accent || 'blue') === v;
+  return `<button class="acc${on ? ' on' : ''}" data-act="setAccent" data-v="${v}" role="radio" aria-checked="${on}" aria-label="${l}"><i style="background:var(--sw-${v})">${ICON.check}</i><span>${l}</span></button>`;
+}).join('')}</div>`;
+const themeSeg = () => `<div class="seg">${[['auto', 'Automatisch'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([v, l]) =>
+  `<button class="${(S.settings.theme || 'auto') === v ? 'on' : ''}" data-act="setTheme" data-v="${v}">${l}</button>`).join('')}</div>`;
 const infoBtn = k => `<button class="info-btn" data-act="info" data-k="${k}" aria-label="Erklärung: ${INFO[k].t}">${ICON.info}</button>`;
 const pl = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const SEP = '<span class="sep" aria-hidden="true"></span>';

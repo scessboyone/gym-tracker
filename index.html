@@ -7,7 +7,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="color-scheme" content="light dark">
   <meta name="description" content="Trainingsplan zum Abhaken: Sätze, Gewichte, Pausen-Timer, Verlauf und Körpergewicht – offline auf dem Handy.">
-  <script>try { var t = localStorage.getItem('gym-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  <script>try { var t = localStorage.getItem('gym-theme'); if (t) document.documentElement.dataset.theme = t;
+    var a = localStorage.getItem('gym-accent'); if (a) document.documentElement.dataset.accent = a; } catch (e) {}
     (function () { var d = document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
       document.querySelector('meta[name="theme-color"]').content = d ? '#000000' : '#f2f2f7';
       // iPhone: im Dunkelmodus läuft die App bis unter die Uhrzeit (weiße Schrift), hell bleibt die normale Leiste

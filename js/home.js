@@ -113,9 +113,13 @@ function renderHome() {
     <div class="sub">${esc(dateLabel(Date.now(), true))}</div>
     <h2>Hallo${name ? ', ' + esc(name) : ''}</h2>
     <p>${line}</p></section>`;
-  if (!name) h += `<div class="card"><b>Wie heißt du?</b><div class="sub" style="margin:2px 0 10px">Dann begrüßt dich die App mit deinem Namen.</div>
-    <div style="display:flex;gap:8px"><input class="input" id="name-in" placeholder="Dein Name" maxlength="30" autocomplete="given-name" style="flex:1;min-width:0">
-    <button class="btn primary" data-act="saveName">Speichern</button></div></div>`;
+  // Beim ersten Start: Name, Hell/Dunkel und Akzentfarbe (alles später unter Mehr änderbar)
+  if (!name && !S.settings.setupDone) h += `<div class="card setup"><b>Willkommen!</b>
+    <div class="sub" style="margin-top:2px">Kurz einrichten – alles lässt sich später unter Mehr ändern.</div>
+    <label class="field"><span>Dein Name</span><input class="input" id="name-in" placeholder="Dein Name" maxlength="30" autocomplete="given-name" value="${esc(V.nameDraft || '')}"></label>
+    <div class="field"><span>Darstellung</span>${themeSeg()}</div>
+    <div class="field"><span>Akzentfarbe</span>${accentPicker()}</div>
+    <button class="btn primary block" style="margin-top:16px" data-act="saveName">Los geht’s</button></div>`;
   h += installBanner() + backupBanner();
   if (!days.length) {
     return h + `<div class="card"><b>Noch kein Trainingsplan</b><div class="sub" style="margin:2px 0 12px">Leg deine Trainingstage und Übungen an – oder lass dir einen Plan-Link schicken (Mehr → Plan).</div>

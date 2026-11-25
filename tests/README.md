@@ -19,6 +19,7 @@ WebKit einmalig installieren: im Skill-Ordner `npx playwright install webkit`.
 | `muscles-test.js` | Muskel-Statistik: Übungen ohne erledigten Satz zählen nicht, „Am meisten“ nur über 0 |
 | `topbar-test.js` | Kopfzeile beim Scrollen: Home ohne Leiste, Titel scrollt weg, nur die Knopfzeile bleibt stehen |
 | `review-test.js` | Die 11 Fehler aus dem Code-Review vom 25.11. gezielt nachgestellt (leerer Tag, Plan-Link-Schutz, Rückgängig …) |
+| `accent-test.js` | Erster Start (Willkommens-Karte), Akzentfarbe wählen und behalten, heutiger Tag in der Akzentfarbe |
 | `offline-test.js` | Service Worker installiert sich, alle App-Dateien liegen im Cache, App startet offline |
 | `run-all.js` | Startet den Server und alle Tests in Chrome und WebKit, mit Zusammenfassung |
 | `screenshots.js` | Screenshots der Trainings-, Monats- und Übungsseiten mit Beispieldaten (Ordner per `PW_ARTIFACT_DIR`) |

@@ -13,6 +13,21 @@
   --card: #ffffff;
   --card-solid: #ffffff;
   --card-2: #f7f7fa;
+  /* Akzentfarben (Mehr → Darstellung); Grün fehlt, weil Grün „erledigt“ heißt */
+  --blue-text: #0066d6; --blue-fill: #0071e3; --blue-ink: #f7faff; --blue-soft: rgb(0 113 227 / 0.12); --blue-ring: rgb(0 113 227 / 0.55);
+  --blue-text-d: #3b9bff; --blue-fill-d: #0071e3; --blue-ink-d: #f7faff; --blue-soft-d: rgb(0 113 227 / 0.18); --blue-ring-d: rgb(0 113 227 / 0.7);
+  --teal-text: #00707e; --teal-fill: #007d8c; --teal-ink: #f5fdfe; --teal-soft: rgb(0 125 140 / 0.12); --teal-ring: rgb(0 125 140 / 0.55);
+  --teal-text-d: #3cc8dc; --teal-fill-d: #007d8c; --teal-ink-d: #f5fdfe; --teal-soft-d: rgb(0 125 140 / 0.18); --teal-ring-d: rgb(0 125 140 / 0.7);
+  --indigo-text: #4a47c8; --indigo-fill: #5552d4; --indigo-ink: #f8f8ff; --indigo-soft: rgb(85 82 212 / 0.12); --indigo-ring: rgb(85 82 212 / 0.55);
+  --indigo-text-d: #8f8dff; --indigo-fill-d: #5552d4; --indigo-ink-d: #f8f8ff; --indigo-soft-d: rgb(85 82 212 / 0.18); --indigo-ring-d: rgb(85 82 212 / 0.7);
+  --purple-text: #8a3db3; --purple-fill: #9141b8; --purple-ink: #fdf8ff; --purple-soft: rgb(145 65 184 / 0.12); --purple-ring: rgb(145 65 184 / 0.55);
+  --purple-text-d: #d08af5; --purple-fill-d: #9141b8; --purple-ink-d: #fdf8ff; --purple-soft-d: rgb(145 65 184 / 0.18); --purple-ring-d: rgb(145 65 184 / 0.7);
+  --pink-text: #c4165a; --pink-fill: #d0185e; --pink-ink: #fff7fa; --pink-soft: rgb(208 24 94 / 0.12); --pink-ring: rgb(208 24 94 / 0.55);
+  --pink-text-d: #ff6fa0; --pink-fill-d: #d0185e; --pink-ink-d: #fff7fa; --pink-soft-d: rgb(208 24 94 / 0.18); --pink-ring-d: rgb(208 24 94 / 0.7);
+  --red-text: #c8101f; --red-fill: #d70015; --red-ink: #fff7f7; --red-soft: rgb(215 0 21 / 0.12); --red-ring: rgb(215 0 21 / 0.55);
+  --red-text-d: #ff6961; --red-fill-d: #d70015; --red-ink-d: #fff7f7; --red-soft-d: rgb(215 0 21 / 0.18); --red-ring-d: rgb(215 0 21 / 0.7);
+  --graphite-text: #48484d; --graphite-fill: #55555b; --graphite-ink: #fafafa; --graphite-soft: rgb(85 85 91 / 0.12); --graphite-ring: rgb(85 85 91 / 0.55);
+  --graphite-text-d: #c7c7cc; --graphite-fill-d: #aeaeb2; --graphite-ink-d: #111114; --graphite-soft-d: rgb(174 174 178 / 0.18); --graphite-ring-d: rgb(174 174 178 / 0.7);
   --seg-on: #ffffff;
   --glass: rgb(249 249 251 / 0.82);
   --sheet: #f2f2f7;
@@ -95,6 +110,31 @@
   --chart-avg: rgb(255 255 255 / 0.55); --cursor: rgb(255 255 255 / 0.35);
   color-scheme: dark;
 }
+/* ---------- Akzentfarbe anwenden (data-accent auf <html>, Blau = Grundeinstellung) ---------- */
+:root { --sw-blue: var(--blue-fill); --sw-teal: var(--teal-fill); --sw-indigo: var(--indigo-fill); --sw-purple: var(--purple-fill); --sw-pink: var(--pink-fill); --sw-red: var(--red-fill); --sw-graphite: var(--graphite-fill); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --sw-blue: var(--blue-fill-d); --sw-teal: var(--teal-fill-d); --sw-indigo: var(--indigo-fill-d); --sw-purple: var(--purple-fill-d); --sw-pink: var(--pink-fill-d); --sw-red: var(--red-fill-d); --sw-graphite: var(--graphite-fill-d); } }
+:root[data-theme="dark"] { --sw-blue: var(--blue-fill-d); --sw-teal: var(--teal-fill-d); --sw-indigo: var(--indigo-fill-d); --sw-purple: var(--purple-fill-d); --sw-pink: var(--pink-fill-d); --sw-red: var(--red-fill-d); --sw-graphite: var(--graphite-fill-d); }
+:root[data-accent="teal"] { --accent: var(--teal-text); --accent-fill: var(--teal-fill); --accent-ink: var(--teal-ink); --accent-soft: var(--teal-soft); --accent-ring: var(--teal-ring); }
+:root[data-accent="indigo"] { --accent: var(--indigo-text); --accent-fill: var(--indigo-fill); --accent-ink: var(--indigo-ink); --accent-soft: var(--indigo-soft); --accent-ring: var(--indigo-ring); }
+:root[data-accent="purple"] { --accent: var(--purple-text); --accent-fill: var(--purple-fill); --accent-ink: var(--purple-ink); --accent-soft: var(--purple-soft); --accent-ring: var(--purple-ring); }
+:root[data-accent="pink"] { --accent: var(--pink-text); --accent-fill: var(--pink-fill); --accent-ink: var(--pink-ink); --accent-soft: var(--pink-soft); --accent-ring: var(--pink-ring); }
+:root[data-accent="red"] { --accent: var(--red-text); --accent-fill: var(--red-fill); --accent-ink: var(--red-ink); --accent-soft: var(--red-soft); --accent-ring: var(--red-ring); }
+:root[data-accent="graphite"] { --accent: var(--graphite-text); --accent-fill: var(--graphite-fill); --accent-ink: var(--graphite-ink); --accent-soft: var(--graphite-soft); --accent-ring: var(--graphite-ring); }
+@media (prefers-color-scheme: dark) {
+  :root[data-accent="teal"]:not([data-theme="light"]) { --accent: var(--teal-text-d); --accent-fill: var(--teal-fill-d); --accent-ink: var(--teal-ink-d); --accent-soft: var(--teal-soft-d); --accent-ring: var(--teal-ring-d); }
+  :root[data-accent="indigo"]:not([data-theme="light"]) { --accent: var(--indigo-text-d); --accent-fill: var(--indigo-fill-d); --accent-ink: var(--indigo-ink-d); --accent-soft: var(--indigo-soft-d); --accent-ring: var(--indigo-ring-d); }
+  :root[data-accent="purple"]:not([data-theme="light"]) { --accent: var(--purple-text-d); --accent-fill: var(--purple-fill-d); --accent-ink: var(--purple-ink-d); --accent-soft: var(--purple-soft-d); --accent-ring: var(--purple-ring-d); }
+  :root[data-accent="pink"]:not([data-theme="light"]) { --accent: var(--pink-text-d); --accent-fill: var(--pink-fill-d); --accent-ink: var(--pink-ink-d); --accent-soft: var(--pink-soft-d); --accent-ring: var(--pink-ring-d); }
+  :root[data-accent="red"]:not([data-theme="light"]) { --accent: var(--red-text-d); --accent-fill: var(--red-fill-d); --accent-ink: var(--red-ink-d); --accent-soft: var(--red-soft-d); --accent-ring: var(--red-ring-d); }
+  :root[data-accent="graphite"]:not([data-theme="light"]) { --accent: var(--graphite-text-d); --accent-fill: var(--graphite-fill-d); --accent-ink: var(--graphite-ink-d); --accent-soft: var(--graphite-soft-d); --accent-ring: var(--graphite-ring-d); }
+}
+:root[data-accent="teal"][data-theme="dark"] { --accent: var(--teal-text-d); --accent-fill: var(--teal-fill-d); --accent-ink: var(--teal-ink-d); --accent-soft: var(--teal-soft-d); --accent-ring: var(--teal-ring-d); }
+:root[data-accent="indigo"][data-theme="dark"] { --accent: var(--indigo-text-d); --accent-fill: var(--indigo-fill-d); --accent-ink: var(--indigo-ink-d); --accent-soft: var(--indigo-soft-d); --accent-ring: var(--indigo-ring-d); }
+:root[data-accent="purple"][data-theme="dark"] { --accent: var(--purple-text-d); --accent-fill: var(--purple-fill-d); --accent-ink: var(--purple-ink-d); --accent-soft: var(--purple-soft-d); --accent-ring: var(--purple-ring-d); }
+:root[data-accent="pink"][data-theme="dark"] { --accent: var(--pink-text-d); --accent-fill: var(--pink-fill-d); --accent-ink: var(--pink-ink-d); --accent-soft: var(--pink-soft-d); --accent-ring: var(--pink-ring-d); }
+:root[data-accent="red"][data-theme="dark"] { --accent: var(--red-text-d); --accent-fill: var(--red-fill-d); --accent-ink: var(--red-ink-d); --accent-soft: var(--red-soft-d); --accent-ring: var(--red-ring-d); }
+:root[data-accent="graphite"][data-theme="dark"] { --accent: var(--graphite-text-d); --accent-fill: var(--graphite-fill-d); --accent-ink: var(--graphite-ink-d); --accent-soft: var(--graphite-soft-d); --accent-ring: var(--graphite-ring-d); }
+
 
 /* ---------- Grundlagen ---------- */
 *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -356,7 +396,9 @@ button.cal-d { display: flex; flex-direction: column; align-items: center; justi
 button.cal-d.done { color: var(--green-ink); font-weight: 800; }
 button.cal-d.sick { color: var(--orange); }
 button.cal-d.plan { color: var(--text); }
-.cal-d.today { outline: 2px solid var(--text); outline-offset: 1px; }
+.cal-d.today:not(.done):not(.sick) { background: var(--accent-fill); color: var(--accent-ink); font-weight: 800; box-shadow: none; }
+.cal-d.today:not(.done):not(.sick) small { color: var(--accent-ink); }
+.cal-d.today.done, .cal-d.today.sick { box-shadow: 0 0 0 3px var(--accent-fill) inset; }
 .cal-d small { font-size: 9px; font-weight: 700; color: var(--accent); }
 .cal-d.extra.plan { box-shadow: 0 0 0 2px var(--accent-ring) inset; background: var(--accent-soft); }
 .cal-d.changed::after { content: ""; position: absolute; top: 4px; right: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
@@ -584,3 +626,19 @@ body.focus main { padding-bottom: calc(var(--safe-b) + 176px); }
 
 /* ---------- iPhone: Fläche hinter der Uhrzeit (nur bei durchgehender Statusleiste, sonst 0 px hoch) ---------- */
 body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: var(--safe-t); background: var(--bg); z-index: 60; pointer-events: none; }
+
+/* ---------- Auswahl der Akzentfarbe ---------- */
+.acc-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.acc { display: grid; justify-items: center; gap: 6px; padding: 4px 0; border-radius: 12px; color: var(--sub); font-size: 12px; font-weight: 600; background: none; border: 0; }
+.acc i { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: var(--accent-ink); }
+.acc i svg { width: 18px; height: 18px; stroke-width: 3; opacity: 0; }
+.acc.on { color: var(--text); }
+.acc.on i { box-shadow: 0 0 0 3px var(--card-solid), 0 0 0 5px var(--text); }
+.acc.on i svg { opacity: 1; }
+.acc:hover i { transform: scale(1.06); }
+.acc:active i { transform: scale(.94); }
+.acc:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .acc:hover i, .acc:active i { transform: none; } }
+.acc-label { margin: 16px 4px 8px; }
+.setup .field { margin-top: 12px; }
+.setup .seg { margin-top: 0; }

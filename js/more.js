@@ -24,8 +24,7 @@ function renderMore() {
   setTop('Mehr');
   return `${installBanner()}
     <div class="section-title">Darstellung${infoBtn('theme')}</div>
-    <div class="card"><div class="seg" style="margin-top:0">${[['auto', 'Automatisch'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([v, l]) =>
-      `<button class="${(S.settings.theme || 'auto') === v ? 'on' : ''}" data-act="setTheme" data-v="${v}">${l}</button>`).join('')}</div></div>
+    <div class="card setup">${themeSeg()}<div class="sub acc-label">Akzentfarbe</div>${accentPicker()}</div>
     <div class="section-title">Profil</div>
     <div class="list">
       <label class="toggle"><span>Dein Name (für die Begrüßung)</span>
