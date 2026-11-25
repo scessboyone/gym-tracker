@@ -170,13 +170,19 @@ const URL = process.env.TARGET_URL || 'http://127.0.0.1:8777/';
     Object.defineProperty(document, 'visibilityState', { get: () => 'hidden', configurable: true });
     document.dispatchEvent(new Event('visibilitychange'));
     await new Promise(r => setTimeout(r, 100));
+    T.end -= 5000; tickRest(); // 5 s später: Benachrichtigung wird neu geschrieben
+    await new Promise(r => setTimeout(r, 100));
     T.end = Date.now() - 1; tickRest();
     await new Promise(r => setTimeout(r, 100));
     delete document.hidden; delete document.visibilityState;
     return { shown };
   });
   if (notes.skip) console.log('SKIP Benachrichtigung (in diesem Browser nicht verfügbar)');
-  else t(notes.shown.some(s => /^Pause bis \d/.test(s)) && notes.shown.includes('Pause vorbei – los!'), 'Benachrichtigung: Restzeit im Hintergrund und „Pause vorbei“ (' + notes.shown.join(' / ') + ')');
+  else {
+    const run = notes.shown.filter(s => /^Pause \d+:\d\d$/.test(s));
+    t(run.length >= 2 && run[0] !== run[run.length - 1], 'Benachrichtigung: Timer läuft runter (' + run.join(' → ') + ')');
+    t(notes.shown.includes('Pause vorbei – los!'), 'Benachrichtigung: „Pause vorbei – los!“ am Ende');
+  }
   await page.evaluate(() => { S.settings.restNotify = false; stopRest(); });
 
   // 10) Gesten (nur Chrome): Fenster am Strich wegziehen, Kalendertag ziehen

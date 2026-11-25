@@ -3,10 +3,10 @@
 // Alle Dateien in js/ teilen sich den globalen Bereich; Reihenfolge siehe index.html.
 
 /* ---------- Pausen-Timer ---------- */
-const T = { end: 0, total: 0, iv: null, endedAt: 0, noteAt: 0 };
+const T = { end: 0, total: 0, iv: null, endedAt: 0, noteSec: null };
 function startRest(sec) {
   if (!sec) return;
-  T.total = sec; T.end = Date.now() + sec * 1000; T.endedAt = 0; T.noteAt = 0;
+  T.total = sec; T.end = Date.now() + sec * 1000; T.endedAt = 0; T.noteSec = null;
   clearInterval(T.iv); T.iv = setInterval(tickRest, 250);
   tickRest();
 }
@@ -31,8 +31,8 @@ function tickRest() {
     el.innerHTML = '<span class="lbl">Pause</span><b></b><button data-act="tAdd" data-d="-15">−15 s</button><button data-act="tAdd" data-d="15">+15 s</button><button data-act="tStop" aria-label="Pause beenden">✕</button>';
   }
   el.querySelector('b').textContent = fmtDur(left * 1000);
-  // App im Hintergrund: Restzeit in der Benachrichtigung ab und zu auffrischen (still, ohne erneuten Ton)
-  if (document.hidden && Date.now() - T.noteAt > 15000) restNote('run');
+  // App im Hintergrund: Benachrichtigung jede Sekunde still neu schreiben, damit der Timer dort runterläuft
+  if (document.hidden && left !== T.noteSec) { T.noteSec = left; restNote('run'); }
   updateMini();
 }
 function stopRest() { clearInterval(T.iv); T.iv = null; T.endedAt = 0; const el = $('#timer'); el.hidden = true; el.dataset.mode = ''; restNote('close'); updateMini(); }
@@ -48,10 +48,10 @@ async function restNote(kind) {
     if (kind === 'close') { (await reg.getNotifications({ tag: 'rest' })).forEach(n => n.close()); return; }
     const opt = { tag: 'rest', icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', lang: 'de' };
     if (kind === 'run') {
-      T.noteAt = Date.now();
       const left = Math.max(0, Math.ceil((T.end - Date.now()) / 1000));
-      // Endzeit im Titel: stimmt auch dann, wenn Android die App im Hintergrund anhält und die Restzeit nicht mehr auffrischt
-      await reg.showNotification(`Pause bis ${clock(T.end)} Uhr`, { ...opt, body: `Noch ${fmtDur(left * 1000)} – antippen, um zurückzukehren`, silent: true, renotify: false });
+      T.noteSec = left;
+      // Restzeit im Titel (läuft jede Sekunde runter), Endzeit im Text: stimmt auch, wenn Android die App im Hintergrund anhält
+      await reg.showNotification(`Pause ${fmtDur(left * 1000)}`, { ...opt, body: `Bis ${clock(T.end)} Uhr – antippen, um zurückzukehren`, silent: true, renotify: false });
     } else {
       const A = S.active, en = A && A.entries[A.order ? A.order[A.pos] : 0];
       await reg.showNotification('Pause vorbei – los!', { ...opt, body: en ? `Weiter mit ${en.name}` : 'Zeit für den nächsten Satz', renotify: true, vibrate: [300, 120, 300] });

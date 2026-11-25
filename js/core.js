@@ -14,7 +14,7 @@ const CHANGELOG = [
   { v: '1.1.0', items: [
     'Pause: Es gilt immer deine Pause unter Mehr → Training. Eine eigene Pause pro Übung trägst du nur noch bei Bedarf selbst ein (Plan → Übung). Pausen aus importierten Plänen wurden zurückgesetzt',
     'Mehr → Training: Pausen-Timer zwischen den Übungen an- oder ausschalten',
-    'Android: Pausen-Timer als Benachrichtigung, wenn du die App verlässt (Mehr → Training)',
+    'Android: Pausen-Timer läuft in der Benachrichtigung weiter, wenn du die App verlässt (Mehr → Training)',
     'Training minimiert: Unten bleibt eine Leiste mit Pause und Trainingszeit – antippen bringt dich zurück ins Training',
     'Übung auslassen, z. B. wenn eine Maschine kaputt ist – wird mit Grund im Training eingetragen',
     'Training nachtragen: im Kalender auf einen vergangenen Tag tippen oder unter Verlauf → „Training nachtragen“',
@@ -185,7 +185,7 @@ const INFO = {
   muscleEdit: { t: 'Muskeln festlegen', x: 'Muskel antippen: 1× Hauptmuskel (kräftig), 2× Hilfsmuskel (hell), 3× aus.' },
   alts: { t: 'Alternativen', x: 'Zum Beispiel Maschine statt Kurzhanteln, falls etwas besetzt ist. Im Training schaltest du mit dem Pfeil-Knopf neben dem Übungsnamen um.\nSätze und Pause gelten wie bei der Hauptübung, Gewicht, Verlauf und Rekorde werden getrennt geführt.' },
   theme: { t: 'Darstellung', x: 'Automatisch folgt der Hell- oder Dunkel-Einstellung deines Handys.' },
-  rest: { t: 'Pause', x: 'Die Pause hier gilt für alle Übungen. Braucht eine Übung eine andere Pause, trag sie unter Plan → Übung → „Eigene Pause“ ein. Leer lassen = diese Pause.\nZwischen den Übungen aus: Nach dem letzten Satz einer Übung startet kein Timer.\nBenachrichtigung (Android): Verlässt du die App während der Pause, zeigt das Handy, bis wann die Pause geht, und meldet sich am Ende. Hält Android die App bei gesperrtem Bildschirm an, kann die Meldung am Ende etwas später kommen – die Uhrzeit in der Benachrichtigung stimmt aber immer.' },
+  rest: { t: 'Pause', x: 'Die Pause hier gilt für alle Übungen. Braucht eine Übung eine andere Pause, trag sie unter Plan → Übung → „Eigene Pause“ ein. Leer lassen = diese Pause.\nZwischen den Übungen aus: Nach dem letzten Satz einer Übung startet kein Timer.\nBenachrichtigung (Android): Verlässt du die App während der Pause, läuft der Timer in der Benachrichtigung weiter runter und meldet sich am Ende. Hält Android die App bei gesperrtem Bildschirm an, kann der Timer dort stehen bleiben und die Meldung später kommen – die Endzeit („bis 14:32 Uhr“) stimmt aber immer.' },
 };
 // Pause einer Übung im Training: eigene Pause aus dem Plan, sonst die allgemeine Einstellung
 // (aus dem aktuellen Plan gelesen, damit Änderungen auch im laufenden Training sofort gelten)
