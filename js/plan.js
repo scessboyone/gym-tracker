@@ -4,7 +4,7 @@
 
 /* ----- Plan ----- */
 function renderPlan() {
-  setTop('Plan', '', '<button class="linkbtn" data-act="addDay">+ Tag</button>');
+  setTop('Plan', S.plan.days.length ? infoBtn('plan') : '', '<button class="linkbtn" data-act="addDay">+ Tag</button>');
   if (!S.plan.days.length) {
     return `<div class="empty"><b>Noch keine Trainingstage</b>Leg z. B. „Push“, „Pull“ und „Beine“ an.</div>
       <button class="btn primary block" data-act="addDay">Trainingstag anlegen</button>
@@ -15,8 +15,7 @@ function renderPlan() {
         <div class="title">${esc(d.name)}</div><div class="sub">${(d.weekdays || []).map(i => WD[i]).join(', ') || 'Kein fester Tag'}${SEP}${pl(d.exercises.length, 'Übung', 'Übungen')}</div></button>
       <button class="iconbtn" data-act="moveDay" data-id="${d.id}" data-d="-1" ${k === 0 ? 'disabled' : ''} aria-label="Nach oben">${ICON.up}</button>
       <button class="iconbtn" data-act="moveDay" data-id="${d.id}" data-d="1" ${k === S.plan.days.length - 1 ? 'disabled' : ''} aria-label="Nach unten">${ICON.down}</button>
-    </div>`).join('')}</div>
-    <p class="sub" style="margin:0 4px">Tippe auf einen Tag, um Übungen, Sätze, Wiederholungen und Gewichte zu bearbeiten.</p>`;
+    </div>`).join('')}</div>`;
 }
 function renderDayEditor(d) {
   setTop(d.name || 'Trainingstag', `<button class="linkbtn" data-act="back">${ICON.back}Plan</button>`);
@@ -55,7 +54,7 @@ function drawExSheet() {
   const title = main ? (D.isNew ? 'Neue Übung' : 'Übung bearbeiten') : 'Alternative';
   const html = `<div class="sheet-head"><h2>${title}</h2>
       ${main ? '<button class="linkbtn" data-act="closeSheet">Abbrechen</button>' : `<button class="linkbtn" data-act="altDone">${ICON.back}Zurück</button>`}</div>
-    ${main ? '' : `<p class="sub" style="margin-top:0">Alternative zu „${esc(D.ex.name || 'Übung')}“. Sätze und Pause gelten wie bei der Hauptübung – Gewicht, Verlauf und Rekorde werden getrennt geführt.</p>`}
+    ${main ? '' : `<p class="sub info-line" style="margin-top:0">Alternative zu „${esc(D.ex.name || 'Übung')}“${infoBtn('alts')}</p>`}
     <label class="field" style="margin-bottom:${D.isNew || !main ? 4 : 12}px"><span>Name – tippen, um in der Übungsdatenbank zu suchen</span><input class="input" id="f-name" value="${esc(e.name)}" autocomplete="off" placeholder="${main ? 'z. B. Bankdrücken' : 'z. B. Bizepsmaschine'}"></label>
     <div id="sug"></div>
     <div class="grid2">
@@ -66,20 +65,19 @@ function drawExSheet() {
       ${main ? `<label class="field"><span>Pause (Sekunden)</span><input class="input" id="f-rest" inputmode="numeric" value="${e.rest}"></label>` : ''}
     </div>
     <label class="field"><span>Notiz / Einstellungen (z. B. Sitzhöhe, Stufe, Griff)</span><textarea class="input" id="f-note" placeholder="z. B. Sitz Stufe 5, Polster auf 3">${esc(e.note)}</textarea></label>
-    <div class="section-title">Muskeln</div>
+    <div class="section-title">Muskeln${infoBtn('muscleEdit')}</div>
     <div class="card" style="padding:12px">${exThumb(e, 'musbig')}</div>
-    <p class="sub" style="margin:0 4px 8px">Antippen: 1× = Hauptmuskel (kräftig), 2× = Hilfsmuskel (hell), 3× = aus.</p>
     <div class="mchips">${Object.entries(MUSCLE_DE).map(([k, l]) => {
       const st = e.muscles && e.muscles.p.includes(k) ? 'mp' : e.muscles && e.muscles.s.includes(k) ? 'ms' : '';
       return `<button class="mchip ${st}" data-act="cycleMuscle" data-m="${k}">${l}</button>`;
     }).join('')}</div>
     <button class="btn small" style="margin-top:8px" data-act="imgDb">Muskeln automatisch aus Übungsdatenbank</button>
     <div id="dbsearch"></div>
-    ${main ? `<div class="section-title">Alternativen (Umschalter im Training)</div>
+    ${main ? `<div class="section-title">Alternativen${infoBtn('alts')}</div>
       ${e.alts.length ? `<div class="list">${e.alts.map((a, k) => `<button class="row" data-act="editAlt" data-k="${k}">
         ${exThumb(a)}
         <div class="grow"><div class="title">${esc(a.name || 'Ohne Namen')}</div><div class="sub">${repTxt(a)} Wdh.${SEP}${kgTxt(a.weight)}</div></div>${ICON.chev}</button>`).join('')}</div>`
-        : '<p class="sub" style="margin:0 4px 8px">z. B. Maschine statt Kurzhanteln – im Training kannst du dann umschalten.</p>'}
+        : ''}
       <button class="btn small" data-act="addAlt">+ Alternative hinzufügen</button>
       <button class="btn primary block" data-act="saveEx">Speichern</button>
       ${D.isNew ? '' : '<button class="btn danger block" data-act="deleteEx">Übung löschen</button>'}`

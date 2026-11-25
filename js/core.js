@@ -7,10 +7,13 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '0.20.5';
+const APP_VERSION = '0.21.0';
 // Änderungen je Version (neueste zuerst). Nach einem Update zeigt die App nur, was seit der zuletzt gesehenen Version neu ist.
 // Neue Version: oben einen Eintrag { v: APP_VERSION, items: [...] } ergänzen.
 const CHANGELOG = [
+  { v: '0.21.0', items: [
+    'Erklärungen stecken jetzt hinter einem kleinen i-Knopf im jeweiligen Bereich, die Seiten sind dadurch aufgeräumter',
+  ] },
   { v: '0.20.5', items: [
     'Verlauf → Muskeln: Die Details heißen jetzt „Muskel-Statistik“',
   ] },
@@ -128,9 +131,22 @@ const ICON = {
   img: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg>',
   swap: '<svg viewBox="0 0 24 24"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>',
   edit: '<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg>',
+  info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>',
   gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>',
 };
 
+// Kurze Erklärungen hinter dem i-Knopf (statt Text direkt auf der Seite)
+const INFO = {
+  week: { t: 'Kalender und Serie', x: 'Tippe auf einen Tag, um ein Training zu verschieben, ausfallen zu lassen, ein Extra-Training einzuplanen oder dich krank zu melden.\nSerie: Wochen am Stück, in denen du alle geplanten Trainings geschafft hast. Krank-Tage zählen nicht dagegen.' },
+  heat: { t: 'Muskeln', x: 'Die Farbe zeigt, wie viele Sätze ein Muskel bekommen hat. Hauptmuskel zählt ganz, Hilfsmuskel halb.\nPro Woche: 1 bis 5 Sätze wenig, 6 bis 11 mittel, ab 12 viel. Bei 4 Wochen gilt das Vierfache.' },
+  sets: { t: 'Sätze pro Muskel', x: 'Jeder erledigte Satz zählt für den Hauptmuskel der Übung ganz und für jeden Hilfsmuskel halb.' },
+  missing: { t: 'Noch nicht dran', x: 'Muskeln aus deinem Plan, die im gewählten Zeitraum noch keinen Satz bekommen haben, mit einer passenden Übung aus deinem Plan.' },
+  plan: { t: 'Plan', x: 'Tippe auf einen Tag, um Übungen, Sätze, Wiederholungen und Gewichte zu bearbeiten. Mit den Pfeilen änderst du die Reihenfolge.' },
+  muscleEdit: { t: 'Muskeln festlegen', x: 'Muskel antippen: 1× Hauptmuskel (kräftig), 2× Hilfsmuskel (hell), 3× aus.' },
+  alts: { t: 'Alternativen', x: 'Zum Beispiel Maschine statt Kurzhanteln, falls etwas besetzt ist. Im Training schaltest du mit dem Pfeil-Knopf neben dem Übungsnamen um.\nSätze und Pause gelten wie bei der Hauptübung, Gewicht, Verlauf und Rekorde werden getrennt geführt.' },
+  theme: { t: 'Darstellung', x: 'Automatisch folgt der Hell- oder Dunkel-Einstellung deines Handys.' },
+};
+const infoBtn = k => `<button class="info-btn" data-act="info" data-k="${k}" aria-label="Erklärung: ${INFO[k].t}">${ICON.info}</button>`;
 const pl = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const SEP = '<span class="sep" aria-hidden="true"></span>';
 

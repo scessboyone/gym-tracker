@@ -57,7 +57,7 @@ function dialog({ title, text = '', input = null, ok = 'OK', cancel = 'Abbrechen
     }
     wrap.innerHTML = `<div class="dlg-card" role="dialog" aria-modal="true" aria-label="${esc(title)}">
       <h3>${esc(title)}</h3>${text ? `<p>${esc(text)}</p>` : ''}${field}
-      <div class="dlg-btns"><button class="btn" data-dlg="0">${esc(cancel)}</button><button class="btn ${danger ? 'danger solid' : 'primary'}" data-dlg="1">${esc(ok)}</button></div></div>`;
+      <div class="dlg-btns${cancel == null ? ' one' : ''}">${cancel == null ? '' : `<button class="btn" data-dlg="0">${esc(cancel)}</button>`}<button class="btn ${danger ? 'danger solid' : 'primary'}" data-dlg="1">${esc(ok)}</button></div></div>`;
     document.body.appendChild(wrap);
     requestAnimationFrame(() => wrap.classList.add('show'));
     history.pushState({ dlg: true }, '');

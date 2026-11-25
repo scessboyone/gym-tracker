@@ -23,10 +23,9 @@ function installBanner() {
 function renderMore() {
   setTop('Mehr');
   return `${installBanner()}
-    <div class="section-title">Darstellung</div>
+    <div class="section-title">Darstellung${infoBtn('theme')}</div>
     <div class="card"><div class="seg" style="margin-top:0">${[['auto', 'Automatisch'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([v, l]) =>
-      `<button class="${(S.settings.theme || 'auto') === v ? 'on' : ''}" data-act="setTheme" data-v="${v}">${l}</button>`).join('')}</div>
-      <p class="sub" style="margin:8px 4px 0">Automatisch folgt der Einstellung deines Handys.</p></div>
+      `<button class="${(S.settings.theme || 'auto') === v ? 'on' : ''}" data-act="setTheme" data-v="${v}">${l}</button>`).join('')}</div></div>
     <div class="section-title">Profil</div>
     <div class="list">
       <label class="toggle"><span>Dein Name (für die Begrüßung)</span>

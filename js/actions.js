@@ -289,6 +289,7 @@ const actions = {
   pastePlanLink() { pastePlanLink(); },
   heatRange(el) { V.heat = el.dataset.r; render(); },
   openMuscles() { openSub('muscles'); },
+  info(el) { const i = INFO[el.dataset.k]; if (i) dialog({ title: i.t, text: i.x, ok: 'Alles klar', cancel: null }); },
   toggleWd(el) {
     const d = findDay(V.sub), i = +el.dataset.wd;
     if (!d) return;

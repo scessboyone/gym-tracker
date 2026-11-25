@@ -20,7 +20,16 @@ const ORDER = ['home', 'train', 'plan', 'log', 'more'];
   await page.reload(); await page.waitForTimeout(500);
   for (let k = 0; k < 2; k++) { const b = page.locator('.dlg-card button, #sheet [data-act="closeSheet"]').first(); if (await b.isVisible().catch(() => false)) { await b.click(); await page.waitForTimeout(300); } }
 
-  const swipe = async (y, dir) => {
+  // Eingabefelder sperren das Wischen absichtlich: ab der Wunsch-Höhe die nächste Stelle suchen, an der beide Startpunkte frei sind
+  const freeY = y0 => page.evaluate(y0 => {
+    // Ein Tipp knapp neben einem Feld wird vom Browser dem Feld zugeordnet: auch 24 px darüber und darunter prüfen
+    const hit = (x, y) => { const e = document.elementFromPoint(x, y); return !e || e.closest('input, textarea, select, .bwsvg, .chart svg, .no-swipe, #tabs, #sheet, #timer, .wk-nav'); };
+    const blocked = (x, y) => hit(x, y) || hit(x, y - 24) || hit(x, y + 24);
+    for (let d = 0; d < 300; d += 10) for (const y of [y0 + d, y0 - d]) if (y > 120 && y < innerHeight - 110 && !blocked(300, y) && !blocked(112, y)) return y;
+    return y0;
+  }, y0);
+  const swipe = async (yWant, dir) => {
+    const y = await freeY(yWant);
     const x0 = 300, x1 = dir < 0 ? 300 - 200 : 300 + 200; // nach links wischen = nächster Bereich
     const [xa, xb] = dir < 0 ? [x0, x1] : [112, 312];
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: xa, y }] });
