@@ -7,10 +7,14 @@
    Daten liegen in IndexedDB (nur auf diesem Gerät).
    ========================================================= */
 
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.1.1';
 // Änderungen je Version (neueste zuerst). Nach einem Update zeigt die App nur, was seit der zuletzt gesehenen Version neu ist.
 // Neue Version: oben einen Eintrag { v: APP_VERSION, items: [...] } ergänzen.
 const CHANGELOG = [
+  { v: '1.1.1', items: [
+    'Training: „Training pausieren“ hält die Trainingszeit an (z. B. für eine kurze Unterbrechung)',
+    'Training: Pausieren, Überspringen, Auslassen und Verwerfen stehen jetzt gemeinsam in einem Feld',
+  ] },
   { v: '1.1.0', items: [
     'Pause: Es gilt immer deine Pause unter Mehr → Training. Eine eigene Pause pro Übung trägst du nur noch bei Bedarf selbst ein (Plan → Übung). Pausen aus importierten Plänen wurden zurückgesetzt',
     'Mehr → Training: Pausen-Timer zwischen den Übungen an- oder ausschalten',

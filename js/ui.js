@@ -74,7 +74,7 @@ function updateMini() {
   if (!show) return;
   const run = !!T.iv, ended = !run && T.endedAt && Date.now() - T.endedAt < 6000;
   const state = run ? `Pause <b>${fmtDur(Math.max(0, Math.ceil((T.end - Date.now()) / 1000)) * 1000)}</b>`
-    : ended ? '<b class="ok">Pause vorbei – los!</b>' : `läuft seit <b>${fmtDur(Date.now() - S.active.startedAt)}</b>`;
+    : ended ? '<b class="ok">Pause vorbei – los!</b>' : `${S.active.pausedAt ? 'pausiert bei' : 'läuft seit'} <b>${fmtDur(workoutMs(S.active))}</b>`;
   const html = `<span class="mini-dot${run ? ' run' : ''}" aria-hidden="true"></span><span class="grow"><span class="mini-t">${esc(S.active.dayName)}</span><span class="mini-s">${state}</span></span><span class="mini-go">Zurück${ICON.chev}</span>`;
   if (m.dataset.html !== html) { m.innerHTML = html; m.dataset.html = html; }
   m.setAttribute('aria-label', `Zurück zum Training ${S.active.dayName}`);

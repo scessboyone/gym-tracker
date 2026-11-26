@@ -96,6 +96,21 @@ const URL = process.env.TARGET_URL || 'http://127.0.0.1:8777/';
   t(/Anleitung/.test(instr) && !/Englisch/.test(instr) && /Kurzhantel/.test(instr), 'Anleitung auf Deutsch: ' + instr.slice(0, 70));
   await closeAll();
 
+  // 6b) Training pausieren: Zeit steht, überlebt Neuladen, Fortsetzen schiebt den Start nach
+  t(await page.locator('.wk-more .row').count() >= 3 && !/z\. B\./.test(await page.locator('[data-act="exOut"]').textContent()), 'Ein Feld mit Pausieren/Überspringen/Auslassen/Verwerfen, ohne Beispiel');
+  t(/pausieren/.test(await page.locator('.wk-more .row').first().textContent()), '„Training pausieren“ steht ganz oben im Feld');
+  await page.evaluate(() => { S.active.startedAt = Date.now() - 600000; save(); });
+  await page.locator('[data-act="exPause"]').click(); await page.waitForTimeout(300);
+  const p1 = await page.evaluate(() => workoutMs(S.active));
+  await page.waitForTimeout(1500);
+  const p2 = await page.evaluate(() => workoutMs(S.active));
+  t(p1 === p2 && /pausiert/.test(await page.locator('#wk-head').textContent()), 'Pausiert: Trainingszeit steht');
+  await page.reload(); await page.locator('#view').waitFor(); await page.waitForTimeout(400); await closeAll();
+  t(await page.evaluate(() => !!S.active.pausedAt), 'Pause bleibt nach Neuladen erhalten');
+  await page.locator('[data-act="exPause"]').click(); await page.waitForTimeout(300);
+  const p3 = await page.evaluate(() => ({ paused: !!S.active.pausedAt, ms: workoutMs(S.active) }));
+  t(!p3.paused && Math.abs(p3.ms - p1) < 1500, 'Fortsetzen: Zeit läuft ab dem alten Stand weiter');
+
   // 7) Übung auslassen (Maschine kaputt) → im Training eingetragen
   await page.evaluate(() => goEx(2)); await page.waitForTimeout(300);
   await page.locator('[data-act="exOut"]').click(); await page.waitForTimeout(300);

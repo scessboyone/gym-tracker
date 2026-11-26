@@ -30,6 +30,9 @@ function ensureOrder(A) {
   if (!Array.isArray(A.order) || A.order.length !== A.entries.length) A.order = A.entries.map((_, i) => i);
   A.pos = Math.min(Math.max(0, A.pos || 0), A.order.length - 1);
 }
+// Trainingszeit ohne Pausen: pausedAt friert die Uhr ein, beim Fortsetzen rückt startedAt nach
+const workoutMs = A => (A.pausedAt || Date.now()) - A.startedAt;
+function resumeWorkout(A) { if (A.pausedAt) { A.startedAt += Date.now() - A.pausedAt; delete A.pausedAt; } }
 const entryDone = en => !!en.out || (en.sets.length > 0 && en.sets.every(s => s.done));
 function workoutHead() {
   const A = S.active;
@@ -37,7 +40,7 @@ function workoutHead() {
   const n = A.order.length, en = A.entries[A.order[A.pos]];
   const next = A.pos < n - 1 ? A.entries[A.order[A.pos + 1]].name : '';
   return `<section class="wk-head" id="wk-head">
-    <div class="wk-meta"><span class="wk-title">${esc(A.dayName)}</span><span>${done} / ${total} Sätze<b id="elapsed">${fmtDur(Date.now() - A.startedAt)}</b></span></div>
+    <div class="wk-meta"><span class="wk-title">${esc(A.dayName)}${A.pausedAt ? ' · pausiert' : ''}</span><span>${done} / ${total} Sätze<b id="elapsed"${A.pausedAt ? ' class="paused"' : ''}>${fmtDur(workoutMs(A))}</b></span></div>
     <div class="steps" role="tablist" aria-label="Übungen">${A.order.map((idx, k) => {
       const e = A.entries[idx], d = e.sets.filter(x => x.done).length, pct = e.out ? 100 : e.sets.length ? (d / e.sets.length) * 100 : 0;
       return `<button class="step${k === A.pos ? ' on' : ''}${entryDone(e) ? ' done' : ''}${e.out ? ' out' : ''}" data-act="exGo" data-k="${k}" role="tab" aria-selected="${k === A.pos}" aria-label="${esc(e.name)}"><i style="width:${pct}%"></i></button>`;
@@ -56,9 +59,12 @@ function renderWorkout() {
   const i = A.order[A.pos], last = A.pos === A.order.length - 1, out = !!A.entries[i].out;
   return `${workoutHead()}
     ${renderEntry(A.entries[i], i)}
-    ${last || out ? '' : '<button class="btn ghost block" data-act="exSkip">Übung überspringen und später machen</button>'}
-    ${out ? '' : `<button class="btn ghost block" data-act="exOut" data-i="${i}">Übung auslassen (z. B. Maschine kaputt)</button>`}
-    <button class="btn ghost block" data-act="cancelWorkout">Training verwerfen</button>
+    <div class="list wk-more">
+      <button class="row" data-act="exPause">${A.pausedAt ? 'Training fortsetzen' : 'Training pausieren'}</button>
+      ${last || out ? '' : '<button class="row" data-act="exSkip">Übung überspringen und später machen</button>'}
+      ${out ? '' : `<button class="row" data-act="exOut" data-i="${i}">Übung auslassen</button>`}
+      <button class="row danger" data-act="cancelWorkout">Training verwerfen</button>
+    </div>
     <div class="wk-nav glass">
       <button class="btn" data-act="exPrev" ${A.pos === 0 ? 'disabled' : ''}>${ICON.back}Zurück</button>
       <button class="btn primary" data-act="exNext">${last ? 'Training beenden' : `Weiter${ICON.chev}`}</button>
@@ -155,7 +161,7 @@ function rerenderEntry(i) {
 }
 function tickElapsed() {
   const el = $('#elapsed');
-  if (el && S.active) el.textContent = fmtDur(Date.now() - S.active.startedAt);
+  if (el && S.active) el.textContent = fmtDur(workoutMs(S.active));
   if (S.active && !T.iv) updateMini(); // Trainingszeit in der Leiste (während der Pause zählt tickRest)
 }
 setInterval(tickElapsed, 1000);
@@ -186,7 +192,7 @@ function startWorkout(dayId) {
 function finishSheet() {
   const { done, total } = workoutCounts();
   openSheet(`<div class="sheet-head"><h2>Training beenden</h2></div>
-    <p class="sub">${done} von ${total} Sätzen erledigt${SEP}Dauer ${fmtDur(Date.now() - S.active.startedAt)}</p>
+    <p class="sub">${done} von ${total} Sätzen erledigt${SEP}Dauer ${fmtDur(workoutMs(S.active))}</p>
     <label class="field"><span>Notiz zum Training (optional)</span>
       <textarea class="input" id="finishNote" placeholder="z. B. Schulter gezwickt, schlecht geschlafen …"></textarea></label>
     <div class="list"><label class="toggle"><span>Gewichte und Wiederholungen als neuen Standard in den Plan übernehmen</span>
@@ -196,6 +202,7 @@ function finishSheet() {
 }
 function finishWorkout(apply, note) {
   const A = S.active;
+  resumeWorkout(A); // endedAt = jetzt; die Pausenzeit steckt schon in startedAt
   const prs = [];
   for (const e of A.entries) {
     const done = e.sets.filter(s => s.done);

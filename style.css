@@ -753,3 +753,9 @@ body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: 
 .adv-row span { color: var(--sub); }
 .adv-row b { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
 @media (prefers-reduced-motion: reduce) { .adv summary svg { transition: none; } }
+
+/* Training: Pausieren/Überspringen/Auslassen/Verwerfen in einem Feld */
+.wk-more { margin-top: 12px; }
+.wk-more .row { color: var(--sub); justify-content: center; }
+.wk-more .row.danger { color: var(--red); }
+.wk-meta b.paused { color: var(--orange); }

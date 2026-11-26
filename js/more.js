@@ -325,7 +325,8 @@ function cleanActive(a) {
       ...(typeof e.out === 'string' && e.out ? { out: str(e.out, 80) } : {}) };
   });
   const order = Array.isArray(a.order) && a.order.length === entries.length && a.order.every(i => Number.isInteger(i) && i >= 0 && i < entries.length) ? a.order : entries.map((_, i) => i);
-  return { id: safeId(a.id), dayId: optId(a.dayId), dayName: str(a.dayName, 60), startedAt: finite(a.startedAt, Date.now()), entries, order, pos: int(a.pos, 0) };
+  return { id: safeId(a.id), dayId: optId(a.dayId), dayName: str(a.dayName, 60), startedAt: finite(a.startedAt, Date.now()), entries, order, pos: int(a.pos, 0),
+    ...(a.pausedAt ? { pausedAt: finite(a.pausedAt, Date.now()) } : {}) };
 }
 function cleanSettings(s) {
   s = s && typeof s === 'object' ? s : {};

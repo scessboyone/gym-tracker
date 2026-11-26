@@ -15,6 +15,7 @@ const actions = {
     const i = +el.dataset.i, j = +el.dataset.j;
     const en = S.active.entries[i], s = en.sets[j];
     s.done = !s.done;
+    if (S.active.pausedAt) { resumeWorkout(S.active); render(); } // Satz abgehakt = es geht weiter
     save(); rerenderEntry(i);
     if (!s.done) return;
     if (navigator.vibrate) navigator.vibrate(15);
@@ -78,6 +79,11 @@ const actions = {
     const en = S.active && S.active.entries[+el.dataset.i];
     if (!en) return;
     delete en.out; save(); render();
+  },
+  exPause() {
+    const A = S.active; if (!A) return;
+    if (A.pausedAt) resumeWorkout(A); else A.pausedAt = Date.now();
+    save(); render(); toast(A.pausedAt ? 'Training pausiert – die Zeit steht' : "Weiter geht's – die Zeit läuft wieder");
   },
   exSkip() {
     const A = S.active; if (!A || A.pos >= A.order.length - 1) return;
