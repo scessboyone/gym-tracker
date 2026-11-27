@@ -32,7 +32,7 @@ function ensureOrder(A) {
 }
 // Trainingszeit ohne Pausen: pausedAt friert die Uhr ein, beim Fortsetzen rückt startedAt nach
 const workoutMs = A => (A.pausedAt || Date.now()) - A.startedAt;
-function resumeWorkout(A) { if (A.pausedAt) { A.startedAt += Date.now() - A.pausedAt; delete A.pausedAt; } }
+function resumeWorkout(A) { if (A.pausedAt) { A.startedAt += Date.now() - A.pausedAt; delete A.pausedAt; resumeRest(); } }
 const entryDone = en => !!en.out || (en.sets.length > 0 && en.sets.every(s => s.done));
 function workoutHead() {
   const A = S.active;

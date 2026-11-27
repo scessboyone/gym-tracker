@@ -3,10 +3,10 @@
 // Alle Dateien in js/ teilen sich den globalen Bereich; Reihenfolge siehe index.html.
 
 /* ---------- Pausen-Timer ---------- */
-const T = { end: 0, total: 0, iv: null, endedAt: 0, noteSec: null };
+const T = { end: 0, total: 0, iv: null, endedAt: 0, noteSec: null, frozen: null };
 function startRest(sec) {
   if (!sec) return;
-  T.total = sec; T.end = Date.now() + sec * 1000; T.endedAt = 0; T.noteSec = null;
+  T.total = sec; T.end = Date.now() + sec * 1000; T.endedAt = 0; T.noteSec = null; T.frozen = null;
   clearInterval(T.iv); T.iv = setInterval(tickRest, 250);
   tickRest();
 }
@@ -35,7 +35,26 @@ function tickRest() {
   if (document.hidden && left !== T.noteSec) { T.noteSec = left; restNote('run'); }
   updateMini();
 }
-function stopRest() { clearInterval(T.iv); T.iv = null; T.endedAt = 0; const el = $('#timer'); el.hidden = true; el.dataset.mode = ''; restNote('close'); updateMini(); }
+// Training pausieren: Rest-Timer einfrieren (T.frozen = übrige ms), beim Fortsetzen weiterlaufen lassen
+function showFrozen() {
+  const el = $('#timer'), b = el.querySelector('b');
+  if (b) b.textContent = fmtDur(Math.ceil(T.frozen / 1000) * 1000);
+  const l = el.querySelector('.lbl'); if (l) l.textContent = 'Pause angehalten';
+}
+function pauseRest() {
+  if (!T.iv) return;
+  T.frozen = Math.max(0, T.end - Date.now());
+  clearInterval(T.iv); T.iv = null; restNote('close');
+  showFrozen(); updateMini();
+}
+function resumeRest() {
+  if (T.frozen == null) return;
+  T.end = Date.now() + T.frozen; T.frozen = null;
+  T.iv = setInterval(tickRest, 250);
+  $('#timer').dataset.mode = ''; // Beschriftung neu aufbauen
+  tickRest();
+}
+function stopRest() { clearInterval(T.iv); T.iv = null; T.frozen = null; T.endedAt = 0; const el = $('#timer'); el.hidden = true; el.dataset.mode = ''; restNote('close'); updateMini(); }
 
 /* ----- Pausen-Timer als Benachrichtigung (Android): nur solange die App im Hintergrund ist ----- */
 const notifyOn = () => CAN_NOTIFY && S.settings.restNotify && Notification.permission === 'granted';

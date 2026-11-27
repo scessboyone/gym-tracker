@@ -111,6 +111,22 @@ const URL = process.env.TARGET_URL || 'http://127.0.0.1:8777/';
   const p3 = await page.evaluate(() => ({ paused: !!S.active.pausedAt, ms: workoutMs(S.active) }));
   t(!p3.paused && Math.abs(p3.ms - p1) < 1500, 'Fortsetzen: Zeit läuft ab dem alten Stand weiter');
 
+  // 6c) Rest-Timer pausiert mit dem Training und läuft beim Fortsetzen weiter
+  await page.evaluate(() => startRest(60));
+  await page.locator('[data-act="exPause"]').click(); await page.waitForTimeout(300);
+  const rf1 = await page.evaluate(() => T.frozen);
+  await page.waitForTimeout(1500);
+  t(rf1 > 50000 && await page.evaluate(() => T.frozen) === rf1 && await page.evaluate(() => !T.iv), 'Training pausiert: Rest-Timer steht');
+  await page.locator('[data-act="exPause"]').click(); await page.waitForTimeout(300);
+  const rf2 = await page.evaluate(() => ({ f: T.frozen, left: T.end - Date.now(), run: !!T.iv }));
+  t(rf2.f === null && rf2.run && Math.abs(rf2.left - rf1) < 1500, 'Fortsetzen: Rest-Timer läuft ab dem alten Stand weiter');
+  // Einstellung aus: Rest-Timer läuft beim Pausieren weiter
+  await page.evaluate(() => { S.settings.restPause = false; startRest(60); });
+  await page.locator('[data-act="exPause"]').click(); await page.waitForTimeout(300);
+  t(await page.evaluate(() => T.frozen === null && !!T.iv), 'Einstellung aus: Rest-Timer läuft trotz Pause weiter');
+  await page.locator('[data-act="exPause"]').click(); await page.waitForTimeout(300);
+  await page.evaluate(() => { delete S.settings.restPause; stopRest(); });
+
   // 7) Übung auslassen (Maschine kaputt) → im Training eingetragen
   await page.evaluate(() => goEx(2)); await page.waitForTimeout(300);
   await page.locator('[data-act="exOut"]').click(); await page.waitForTimeout(300);

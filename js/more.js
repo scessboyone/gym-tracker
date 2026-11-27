@@ -65,6 +65,8 @@ function renderMore() {
         <input class="input" style="width:90px;text-align:center" inputmode="numeric" data-field="defRest" value="${S.settings.rest}"></label>
       <label class="toggle"><span>Pausen-Timer auch zwischen den Übungen</span>
         <input type="checkbox" data-field="restBetween" ${S.settings.restBetween === false ? '' : 'checked'}></label>
+      <label class="toggle"><span>Pausen-Timer hält an, wenn ich das Training pausiere</span>
+        <input type="checkbox" data-field="restPause" ${S.settings.restPause === false ? '' : 'checked'}></label>
       ${CAN_NOTIFY ? `<label class="toggle"><span>Pausen-Timer als Benachrichtigung</span>
         <input type="checkbox" data-field="restNotify" ${S.settings.restNotify && Notification.permission === 'granted' ? 'checked' : ''}></label>` : ''}
     </div>
@@ -338,6 +340,7 @@ function cleanSettings(s) {
   if (typeof s.seenVersion === 'string' && /^\d+(\.\d+){0,3}$/.test(s.seenVersion)) o.seenVersion = s.seenVersion;
   for (const k of ['setupDone', 'driveOk', 'restNotify', 'restFix']) if (s[k] === true) o[k] = true;
   if (s.restBetween === false) o.restBetween = false; // Standard: Timer auch zwischen den Übungen
+  if (s.restPause === false) o.restPause = false; // Standard: Rest-Timer pausiert mit dem Training
   return o;
 }
 function cleanState(st) {

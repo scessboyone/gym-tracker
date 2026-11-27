@@ -82,7 +82,7 @@ const actions = {
   },
   exPause() {
     const A = S.active; if (!A) return;
-    if (A.pausedAt) resumeWorkout(A); else A.pausedAt = Date.now();
+    if (A.pausedAt) resumeWorkout(A); else { A.pausedAt = Date.now(); if (S.settings.restPause !== false) pauseRest(); }
     save(); render(); toast(A.pausedAt ? 'Training pausiert – die Zeit steht' : "Weiter geht's – die Zeit läuft wieder");
   },
   exSkip() {
@@ -99,7 +99,11 @@ const actions = {
     S.active = null; stopRest(); save(); render();
   },
   closeSheet() { closeSheet(); },
-  tAdd(el) { T.end += (+el.dataset.d) * 1000; if (T.end < Date.now()) T.end = Date.now(); tickRest(); },
+  tAdd(el) {
+    const d = (+el.dataset.d) * 1000;
+    if (T.frozen != null) { T.frozen = Math.max(0, T.frozen + d); showFrozen(); return; }
+    T.end += d; if (T.end < Date.now()) T.end = Date.now(); tickRest();
+  },
   tStop() { stopRest(); },
 
   addDay() {

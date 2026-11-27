@@ -173,6 +173,7 @@ document.addEventListener('change', async e => {
   const f = e.target.dataset && e.target.dataset.field;
   if (f === 'importFile' && e.target.files[0]) { importData(e.target.files[0]); e.target.value = ''; }
   else if (f === 'restBetween') { S.settings.restBetween = e.target.checked; save(); }
+  else if (f === 'restPause') { S.settings.restPause = e.target.checked; save(); }
   else if (f === 'restNotify') {
     const box = e.target;
     if (!box.checked) { restNote('close'); S.settings.restNotify = false; save(); return; }
